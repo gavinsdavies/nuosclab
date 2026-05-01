@@ -70,6 +70,22 @@ All constants (G_F, N_A, ℏc) are taken from OscLib/Constants.h (PDG 2024).
 
 `tools/osclib_oracle.cc` is a standalone C++ program that links against the
 real OscLib `OscCalcPMNS_NSI` and prints reference probabilities to CSV.
-Build it on a machine with OscLib+ROOT (FNAL CVMFS), redirect output to
-`tests/test_vs_osclib.csv`, and commit. The test `test_vs_osclib.py` then
+Build it on a machine with OscLib+ROOT (FNAL CVMFS):
+
+```bash
+g++ -std=c++17 tools/osclib_oracle.cc \
+    $(root-config --cflags --libs) \
+    -I ${EIGEN_INC} -I ${OSCLIB_INC} \
+    -L ${OSCLIB_LIB} -lOscLib \
+    -o tools/osclib_oracle
+```
+
+Then generate and test the oracle CSV:
+
+```bash
+./tools/osclib_oracle > tests/test_vs_osclib.csv
+pytest tests/test_vs_osclib.py -q
+```
+
+Commit `tests/test_vs_osclib.csv` once the comparison passes. The test
 asserts agreement to <10⁻⁴.
