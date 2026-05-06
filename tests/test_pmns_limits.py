@@ -1,7 +1,6 @@
 """Analytic limit checks for the PMNS implementation."""
 
 import numpy as np
-import pytest
 from osclib_explorer import PMNSParams, NSIParams, oscillation_probabilities, pmns_matrix
 
 

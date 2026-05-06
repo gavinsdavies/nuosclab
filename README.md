@@ -51,6 +51,13 @@ pytest tests/ -v
 The `test_vs_osclib` test is skipped until `tests/test_vs_osclib.csv` is
 populated — see `tools/osclib_oracle.cc` for instructions.
 
+## Run lint
+
+```bash
+source /path/to/external/osclib-explorer-venv/bin/activate
+ruff check .
+```
+
 ## Frontend API
 
 The notebook uses the same computation API intended for future web frontends:
