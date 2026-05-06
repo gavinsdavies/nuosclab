@@ -8,29 +8,43 @@ Presets: NOvA (L=810 km, ρ=2.79 g/cm³), DUNE (1300 km), T2K (295 km).
 
 ## Setup (one-time)
 
+The package supports either `uv` or standard `venv`/`pip` workflows.
+
 ```bash
-python3 -m venv ~/venvs/osclib-explorer
-source ~/venvs/osclib-explorer/bin/activate
-pip install -e ".[dev]"
-pip install ipykernel
+python3 -m venv /path/to/external/osclib-explorer-venv
+source /path/to/external/osclib-explorer-venv/bin/activate
+pip install -e ".[notebook,dev]"
 python -m ipykernel install --user \
+    --name=osclib-explorer --display-name "osclib-explorer"
+```
+
+With `uv`, point the project environment at an external path if you do not want
+an in-repository `.venv`:
+
+```bash
+UV_PROJECT_ENVIRONMENT=/path/to/external/osclib-explorer-venv \
+    uv sync --extra notebook --extra dev
+UV_PROJECT_ENVIRONMENT=/path/to/external/osclib-explorer-venv \
+    uv run python -m ipykernel install --user \
     --name=osclib-explorer --display-name "osclib-explorer"
 ```
 
 ## Open the notebook
 
 ```bash
-cd ~/github/osclib-explorer
-source ~/venvs/osclib-explorer/bin/activate
+source /path/to/external/osclib-explorer-venv/bin/activate
 jupyter lab notebooks/explorer.ipynb
 ```
 
 Select the **osclib-explorer** kernel, then run all cells.
 
+With `uv`, use the same `UV_PROJECT_ENVIRONMENT=... uv run jupyter lab
+notebooks/explorer.ipynb` pattern from setup.
+
 ## Run tests
 
 ```bash
-source ~/venvs/osclib-explorer/bin/activate
+source /path/to/external/osclib-explorer-venv/bin/activate
 pytest tests/ -v
 ```
 
@@ -87,5 +101,5 @@ Then generate and test the oracle CSV:
 pytest tests/test_vs_osclib.py -q
 ```
 
-Commit `tests/test_vs_osclib.csv` once the comparison passes. The test
-asserts agreement to <10⁻⁴.
+Keep `tests/test_vs_osclib.csv` local. The test skips when the CSV is absent
+and asserts agreement to <10⁻⁴ when a locally generated oracle file exists.
