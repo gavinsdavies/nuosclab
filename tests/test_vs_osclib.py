@@ -8,7 +8,7 @@ if the CSV is absent.
 import numpy as np
 import pytest
 from pathlib import Path
-from osclib_explorer import PMNSParams, NSIParams, oscillation_probabilities, NOVA
+from nuosclab import PMNSParams, NSIParams, oscillation_probabilities, NOVA
 
 CSV = Path(__file__).parent / "test_vs_osclib.csv"
 

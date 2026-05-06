@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from osclib_explorer import PMNSParams, NSIParams, oscillation_probabilities, NOVA, DUNE, T2K
+from nuosclab import PMNSParams, NSIParams, oscillation_probabilities, NOVA, DUNE, T2K
 
 _E = np.linspace(0.4, 5.0, 200)
 _DEFAULT_PMNS = PMNSParams()

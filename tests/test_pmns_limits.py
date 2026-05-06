@@ -1,7 +1,7 @@
 """Analytic limit checks for the PMNS implementation."""
 
 import numpy as np
-from osclib_explorer import PMNSParams, NSIParams, oscillation_probabilities, pmns_matrix
+from nuosclab import PMNSParams, NSIParams, oscillation_probabilities, pmns_matrix
 
 
 def test_pmns_matrix_unitary():
@@ -21,7 +21,7 @@ def test_vacuum_two_flavor_approximation():
     E_eV = E * 1e9
     dm31 = pmns.dm31
     # two-flavor approx (ignore Δm²₂₁ and θ₁₂ corrections)
-    from osclib_explorer.physics import _KM_TO_M, _HBAR_C_EV_M
+    from nuosclab.physics import _KM_TO_M, _HBAR_C_EV_M
     arg = dm31 * L * _KM_TO_M / (4.0 * E_eV * _HBAR_C_EV_M)
     s2th13 = np.sin(2 * pmns.th13)
     P_approx = s2th13**2 * np.sin(arg)**2

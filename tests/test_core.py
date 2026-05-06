@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from osclib_explorer import (
+from nuosclab import (
     ExplorerConfig,
     NSIParams,
     PMNSParams,
