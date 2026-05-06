@@ -1,4 +1,4 @@
-# OscLib Explorer
+# nuosclab
 
 Interactive PMNS + NSI neutrino oscillation probability viewer.
 
@@ -11,32 +11,32 @@ Presets: NOvA (L=810 km, ρ=2.79 g/cm³), DUNE (1300 km), T2K (295 km).
 The package supports either `uv` or standard `venv`/`pip` workflows.
 
 ```bash
-python3 -m venv /path/to/external/osclib-explorer-venv
-source /path/to/external/osclib-explorer-venv/bin/activate
+python3 -m venv /path/to/external/nuosclab-venv
+source /path/to/external/nuosclab-venv/bin/activate
 pip install -e ".[notebook,dev]"
 python -m ipykernel install --user \
-    --name=osclib-explorer --display-name "osclib-explorer"
+    --name=nuosclab --display-name "nuosclab"
 ```
 
 With `uv`, point the project environment at an external path if you do not want
 an in-repository `.venv`:
 
 ```bash
-UV_PROJECT_ENVIRONMENT=/path/to/external/osclib-explorer-venv \
+UV_PROJECT_ENVIRONMENT=/path/to/external/nuosclab-venv \
     uv sync --extra notebook --extra dev
-UV_PROJECT_ENVIRONMENT=/path/to/external/osclib-explorer-venv \
+UV_PROJECT_ENVIRONMENT=/path/to/external/nuosclab-venv \
     uv run python -m ipykernel install --user \
-    --name=osclib-explorer --display-name "osclib-explorer"
+    --name=nuosclab --display-name "nuosclab"
 ```
 
 ## Open the notebook
 
 ```bash
-source /path/to/external/osclib-explorer-venv/bin/activate
+source /path/to/external/nuosclab-venv/bin/activate
 jupyter lab notebooks/explorer.ipynb
 ```
 
-Select the **osclib-explorer** kernel, then run all cells.
+Select the **nuosclab** kernel, then run all cells.
 
 With `uv`, use the same `UV_PROJECT_ENVIRONMENT=... uv run jupyter lab
 notebooks/explorer.ipynb` pattern from setup.
@@ -44,7 +44,7 @@ notebooks/explorer.ipynb` pattern from setup.
 ## Run tests
 
 ```bash
-source /path/to/external/osclib-explorer-venv/bin/activate
+source /path/to/external/nuosclab-venv/bin/activate
 pytest tests/ -v
 ```
 
@@ -54,7 +54,7 @@ populated — see `tools/osclib_oracle.cc` for instructions.
 ## Run lint
 
 ```bash
-source /path/to/external/osclib-explorer-venv/bin/activate
+source /path/to/external/nuosclab-venv/bin/activate
 ruff check .
 ```
 
@@ -63,7 +63,7 @@ ruff check .
 The notebook uses the same computation API intended for future web frontends:
 
 ```python
-from osclib_explorer import ExplorerConfig, compute_curves
+from nuosclab import ExplorerConfig, compute_curves
 
 curves = compute_curves(ExplorerConfig(experiment="DUNE"))
 ```
@@ -74,7 +74,7 @@ payloads.
 
 ## Physics
 
-The engine (`osclib_explorer/physics.py`) mirrors OscLib's `PMNS_NSI.cxx`:
+The engine (`nuosclab/physics.py`) mirrors OscLib's `PMNS_NSI.cxx`:
 
 1. **PMNS matrix** `U(θ₁₂, θ₁₃, θ₂₃, δ_CP)` — standard PDG convention.
 2. **Vacuum Hamiltonian** `H_vac = U · diag(0, Δm²₂₁, Δm²₃₁) · U† / (2E)`.
