@@ -5,7 +5,7 @@ All constants from PDG 2024 via OscLib/Constants.h.
 """
 
 import numpy as np
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 # ── Physical constants (matching OscLib/Constants.h exactly) ─────────────────
 _GEV_TO_EV      = 1e9
