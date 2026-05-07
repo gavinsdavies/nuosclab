@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.5.0 - 2026-05-07
+
+- Add `nuprobe` as an optional second-engine validation adapter without making
+  it a required dependency.
+- Add optional `nuprobe` agreement tests that skip when the package is not
+  importable.
+- Document how `nuosclab` uses `nuprobe` and OscLib for validation.
+
 ## v0.4.0 - 2026-05-07
 
 - Add an oscillation engine protocol, metadata, capability flags, and registry.
