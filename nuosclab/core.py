@@ -7,7 +7,8 @@ from typing import Any
 
 import numpy as np
 
-from .physics import PMNSParams, NSIParams, oscillation_probabilities
+from .engines import get_engine
+from .physics import PMNSParams, NSIParams
 from .presets import ExperimentPreset, PRESETS
 
 
@@ -18,6 +19,7 @@ class ExplorerConfig:
     experiment: str = "NOvA"
     pmns: PMNSParams = field(default_factory=PMNSParams)
     nsi: NSIParams = field(default_factory=NSIParams)
+    engine: str = "numpy_ref"
     antineutrino: bool = False
     n_points: int = 400
     include_standard: bool = True
@@ -44,6 +46,7 @@ class ExplorerCurves:
         return {
             "config": {
                 "experiment": self.config.experiment,
+                "engine": self.config.engine,
                 "antineutrino": self.config.antineutrino,
                 "n_points": self.config.n_points,
                 "include_standard": self.config.include_standard,
@@ -78,8 +81,9 @@ def compute_curves(config: ExplorerConfig) -> ExplorerCurves:
 
     preset = PRESETS[config.experiment]
     energy_gev = np.linspace(*preset.E_range, config.n_points)
+    engine = get_engine(config.engine)
 
-    live = oscillation_probabilities(
+    live = engine.probabilities(
         energy_gev,
         preset.L_km,
         preset.rho_gcc,
@@ -90,7 +94,7 @@ def compute_curves(config: ExplorerConfig) -> ExplorerCurves:
 
     standard = None
     if config.include_standard:
-        standard = oscillation_probabilities(
+        standard = engine.probabilities(
             energy_gev,
             preset.L_km,
             preset.rho_gcc,
@@ -101,7 +105,7 @@ def compute_curves(config: ExplorerConfig) -> ExplorerCurves:
 
     nominal = None
     if config.include_nominal:
-        nominal = oscillation_probabilities(
+        nominal = engine.probabilities(
             energy_gev,
             preset.L_km,
             preset.rho_gcc,

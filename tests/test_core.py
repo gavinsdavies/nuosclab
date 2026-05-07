@@ -36,6 +36,22 @@ def test_compute_curves_matches_physics_engine():
     assert np.allclose(curves.live, expected)
 
 
+def test_compute_curves_uses_numpy_ref_engine_by_default():
+    config = ExplorerConfig(n_points=12)
+    curves = compute_curves(config)
+    direct = oscillation_probabilities(
+        curves.energy_gev,
+        curves.preset.L_km,
+        curves.preset.rho_gcc,
+        config.pmns,
+        config.nsi,
+        config.antineutrino,
+    )
+
+    assert config.engine == "numpy_ref"
+    assert np.allclose(curves.live, direct)
+
+
 def test_standard_and_nominal_reference_definitions():
     config = ExplorerConfig(
         pmns=PMNSParams(th23=np.radians(45.0)),
@@ -79,12 +95,16 @@ def test_compute_curves_rejects_invalid_config():
     with pytest.raises(ValueError, match="n_points"):
         compute_curves(ExplorerConfig(n_points=1))
 
+    with pytest.raises(ValueError, match="Unknown engine"):
+        compute_curves(ExplorerConfig(engine="missing"))
+
 
 def test_curves_as_dict_is_json_friendly():
     curves = compute_curves(ExplorerConfig(n_points=4))
     payload = curves.as_dict()
 
     assert payload["config"]["experiment"] == "NOvA"
+    assert payload["config"]["engine"] == "numpy_ref"
     assert payload["preset"]["name"] == "NOvA"
     assert isinstance(payload["energy_gev"], list)
     assert isinstance(payload["live"], list)
