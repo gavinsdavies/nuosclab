@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.5.1 - 2026-05-07
+
+- Add Python 3.13 and 3.14 to the GitHub Actions CI matrix while retaining
+  Python 3.10, 3.11, and 3.12 coverage.
+
 ## v0.5.0 - 2026-05-07
 
 - Add `nuprobe` as an optional second-engine validation adapter without making
