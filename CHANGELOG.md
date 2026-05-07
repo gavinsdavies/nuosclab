@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.0 - 2026-05-07
+
+- Add an oscillation engine protocol, metadata, capability flags, and registry.
+- Wrap the existing NumPy implementation as the default `numpy_ref` engine.
+- Route explorer curve computation through the configured engine while preserving
+  existing numerical behavior.
+
 ## v0.3.0 - 2026-05-06
 
 - Rename the project and Python package from `osclib-explorer` / `osclib_explorer`
