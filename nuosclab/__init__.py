@@ -6,6 +6,7 @@ from .engines import (
     EngineCapabilities,
     EngineMetadata,
     EngineRegistry,
+    NuprobeEngine,
     NumpyReferenceEngine,
     OscillationEngine,
     get_engine,
@@ -16,5 +17,5 @@ __all__ = [
     "NOVA", "DUNE", "T2K", "PRESETS", "ExperimentPreset",
     "ExplorerConfig", "ExplorerCurves", "compute_curves",
     "ENGINE_REGISTRY", "EngineCapabilities", "EngineMetadata", "EngineRegistry",
-    "NumpyReferenceEngine", "OscillationEngine", "get_engine",
+    "NuprobeEngine", "NumpyReferenceEngine", "OscillationEngine", "get_engine",
 ]

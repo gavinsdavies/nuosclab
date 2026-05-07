@@ -7,6 +7,7 @@ from nuosclab import (
     ENGINE_REGISTRY,
     NSIParams,
     PMNSParams,
+    NuprobeEngine,
     NumpyReferenceEngine,
     get_engine,
     oscillation_probabilities,
@@ -21,6 +22,17 @@ def test_default_registry_exposes_numpy_reference_engine():
     assert engine.metadata.capabilities.antineutrino
     assert engine.metadata.capabilities.nsi
     assert "numpy_ref" in ENGINE_REGISTRY.names()
+    assert "nuprobe" in ENGINE_REGISTRY.names()
+
+
+def test_nuprobe_engine_reports_optional_dependency_status():
+    engine = get_engine("nuprobe")
+
+    assert isinstance(engine, NuprobeEngine)
+    assert engine.metadata.capabilities.nsi
+    assert engine.metadata.availability in {"available", "unavailable"}
+    if engine.metadata.availability == "unavailable":
+        assert engine.metadata.unavailable_reason is not None
 
 
 def test_numpy_reference_engine_matches_direct_function():
