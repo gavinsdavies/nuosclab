@@ -72,6 +72,30 @@ curves = compute_curves(ExplorerConfig(experiment="DUNE"))
 nominal PMNS probability arrays. Use `curves.as_dict()` for JSON-friendly
 payloads.
 
+## Engine Adapters
+
+`nuosclab` separates the explorer API from the underlying oscillation engine.
+The default engine is `numpy_ref`, a vectorized NumPy implementation maintained
+in this repository. Optional adapters are used for independent validation when
+the external software is available locally.
+
+- [`nuprobe`](https://github.com/shengfong/nuprobe) is used as an optional
+  GPL-3.0-licensed second-engine cross-check. Install it separately from its
+  GitHub repository, then run the optional adapter tests with `nuprobe`
+  importable, for example:
+
+  ```bash
+  PYTHONPATH=/path/to/nuprobe pytest tests/test_nuprobe_adapter.py -q
+  ```
+
+  The adapter maps `nuosclab` PMNS/NSI parameters into `nuprobe`'s `NuSystem`,
+  uses `nuprobe.probability.nuprobe` channel-by-channel, and keeps it out of
+  the required dependency set.
+- [OscLib](https://github.com/cafana/OscLib) is used as an external C++
+  oracle for selected validation points. `nuosclab` does not vendor or require
+  OscLib; `tools/osclib_oracle.cc` can be built on a machine that already has
+  OscLib and ROOT available, then used to generate a local-only CSV for tests.
+
 ## Physics
 
 The engine (`nuosclab/physics.py`) mirrors OscLib's `PMNS_NSI.cxx`:
