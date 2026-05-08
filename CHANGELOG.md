@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.7.0 - 2026-05-08
+
+- Add a live Panel/Bokeh scientific app with experiment, engine,
+  antineutrino, PMNS, NSI, and grid-resolution controls.
+- Add residual plotting and tests that verify Panel control updates refresh
+  Bokeh data sources.
+- Document the normal `panel serve tools/panel_app.py --show` app command.
+
 ## v0.6.0 - 2026-05-08
 
 - Add a Bokeh plotting extra and include Bokeh in the development test
