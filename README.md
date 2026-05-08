@@ -41,6 +41,19 @@ Select the **nuosclab** kernel, then run all cells.
 With `uv`, use the same `UV_PROJECT_ENVIRONMENT=... uv run jupyter lab
 notebooks/explorer.ipynb` pattern from setup.
 
+## Run the Panel app
+
+Install the app extra, then serve the live scientific app:
+
+```bash
+source /path/to/external/nuosclab-venv/bin/activate
+pip install -e ".[app,plot]"
+panel serve tools/panel_app.py --show
+```
+
+The app provides live controls for experiment, engine, antineutrino mode,
+δ_CP, representative NSI magnitudes and phase, and energy-grid resolution.
+
 ## Run tests
 
 ```bash
