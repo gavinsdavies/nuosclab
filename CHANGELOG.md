@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.7.1 - 2026-05-08
+
+- Hide unavailable optional engines from the live app selector so missing
+  adapters cannot break callbacks.
+- Add a live 3x3 probability tab and an experiment-comparison tab.
+- Add experiment-aware colors and document per-plot PNG saving through the
+  Bokeh toolbar.
+
 ## v0.7.0 - 2026-05-08
 
 - Add a live Panel/Bokeh scientific app with experiment, engine,
