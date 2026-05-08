@@ -15,6 +15,9 @@ dependencies = [
 plot = [
     "bokeh>=3.9",
 ]
+app = [
+    "panel>=1.8",
+]
 notebook = [
     "matplotlib>=3.8",
     "ipympl>=0.9",
@@ -24,6 +27,7 @@ notebook = [
 ]
 dev = [
     "bokeh>=3.9",
+    "panel>=1.8",
     "pytest>=8",
     "ruff>=0.4",
 ]
