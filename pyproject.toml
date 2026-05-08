@@ -12,6 +12,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+plot = [
+    "bokeh>=3.9",
+]
 notebook = [
     "matplotlib>=3.8",
     "ipympl>=0.9",
@@ -20,6 +23,7 @@ notebook = [
     "ipykernel",
 ]
 dev = [
+    "bokeh>=3.9",
     "pytest>=8",
     "ruff>=0.4",
 ]
