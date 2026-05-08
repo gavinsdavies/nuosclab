@@ -2,13 +2,14 @@
 
 from bokeh.models import ColumnDataSource
 
-from nuosclab.app import build_panel_app
+from nuosclab.app import EXPERIMENT_COLORS, build_panel_app
 
 
 def test_panel_app_builds_with_controls_and_sources():
     state = build_panel_app()
 
     assert "experiment" in state.controls
+    assert "experiment_logo" in state.controls
     assert "engine" in state.controls
     assert "nuprobe" not in state.controls["engine"].options
     assert {"appearance", "disappearance", "residual", "comparison"} < set(
@@ -17,6 +18,7 @@ def test_panel_app_builds_with_controls_and_sources():
     assert "grid_2_2" in state.sources
     assert isinstance(state.sources["appearance"], ColumnDataSource)
     assert len(state.sources["appearance"].data["energy_gev"]) == 300
+    assert "NOvA" in state.controls["experiment_logo"].object
 
 
 def test_panel_app_updates_sources_when_controls_change():
@@ -28,6 +30,17 @@ def test_panel_app_updates_sources_when_controls_change():
 
     assert before == 300
     assert len(state.sources["appearance"].data["energy_gev"]) == 100
+
+
+def test_panel_app_updates_selected_experiment_logo():
+    state = build_panel_app()
+
+    state.controls["experiment"].value = "DUNE"
+    state.update()
+
+    logo = state.controls["experiment_logo"].object
+    assert "DUNE" in logo
+    assert EXPERIMENT_COLORS["DUNE"] in logo
 
 
 def test_panel_app_can_update_3x3_and_experiment_comparison_sources():

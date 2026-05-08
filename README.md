@@ -53,7 +53,8 @@ panel serve tools/panel_app.py --show
 
 The app provides live controls for experiment, engine, antineutrino mode,
 δ_CP, representative NSI magnitudes and phase, energy-grid resolution,
-experiment comparison, and 3x3 channel inspection. Use the save icon in each
+experiment comparison, 3x3 channel inspection, and selected-experiment logo
+inspired badges with experiment-matched base colors. Use the save icon in each
 Bokeh plot toolbar to export that plot as a PNG.
 
 ## Run tests

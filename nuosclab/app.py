@@ -16,9 +16,14 @@ if TYPE_CHECKING:
     from bokeh.models import ColumnDataSource
 
 EXPERIMENT_COLORS = {
-    "NOvA": "#e25c2a",
-    "DUNE": "#3a7abf",
+    "NOvA": "#183a67",
+    "DUNE": "#f58220",
     "T2K": "#2a9e4f",
+}
+EXPERIMENT_LOGO_SUBTITLES = {
+    "NOvA": "Off-axis long-baseline",
+    "DUNE": "Deep underground neutrinos",
+    "T2K": "Tokai to Kamioka",
 }
 FLAVOR_LABELS = ("e", "mu", "tau")
 
@@ -83,20 +88,39 @@ def build_panel_app() -> AppState:
     grid_plots = _make_grid_plots(initial, sources)
     residual = _make_residual_plot(initial, sources["residual"])
     comparison = _make_comparison_plot(initial, sources["comparison"])
+    logo = pn.pane.HTML(
+        _experiment_logo_html(initial.config.experiment),
+        height=132,
+        sizing_mode="stretch_width",
+    )
+    controls["experiment_logo"] = logo
     status = pn.pane.Markdown(_status_text(initial), sizing_mode="stretch_width")
 
     def update(*_events: object) -> ExplorerCurves:
         curves = _compute_from_controls(controls)
         _update_sources(curves, sources, controls["compare_experiments"].value)
         _update_plot_ranges(curves, plots, residual, comparison, grid_plots)
+        logo.object = _experiment_logo_html(curves.config.experiment)
         status.object = _status_text(curves, controls["compare_experiments"].value)
         return curves
 
-    for widget in controls.values():
+    for widget in (
+        experiment,
+        engine,
+        antineutrino,
+        compare_experiments,
+        delta_cp,
+        eps_emu,
+        eps_etau,
+        eps_mutau,
+        phase_emu,
+        n_points,
+    ):
         widget.param.watch(update, "value")
 
     sidebar = pn.Column(
         "## nuosclab",
+        logo,
         experiment,
         engine,
         antineutrino,
@@ -140,6 +164,44 @@ def _available_engine_options() -> list[str]:
         for metadata in ENGINE_REGISTRY.metadata()
         if metadata.availability == "available"
     ]
+
+
+def _experiment_logo_html(experiment: str) -> str:
+    color = EXPERIMENT_COLORS.get(experiment, "#5b6472")
+    subtitle = EXPERIMENT_LOGO_SUBTITLES.get(experiment, "Long-baseline neutrinos")
+    return f"""
+    <div style="
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 112px;
+        border: 1px solid #d9dee8;
+        border-left: 8px solid {color};
+        border-radius: 8px;
+        background: #ffffff;
+        padding: 14px 16px;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    ">
+      <div style="
+          color: {color};
+          font-size: 34px;
+          line-height: 1;
+          font-weight: 800;
+          letter-spacing: 0;
+      ">{experiment}</div>
+      <div style="
+          margin-top: 8px;
+          color: #3d4654;
+          font-size: 13px;
+          font-weight: 600;
+      ">{subtitle}</div>
+      <div style="
+          margin-top: 11px;
+          height: 5px;
+          border-radius: 999px;
+          background: linear-gradient(90deg, {color}, #d7dde6);
+      "></div>
+    </div>
+    """
 
 
 def _compute_from_controls(controls: dict[str, object]) -> ExplorerCurves:
