@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.7.2 - 2026-05-08
+
+- Add selected-experiment logo-inspired badges to the Panel sidebar.
+- Use experiment-matched base colors for NOvA, DUNE, and T2K in badges and
+  plots.
+- Update the badge when the selected experiment changes.
+
 ## v0.7.1 - 2026-05-08
 
 - Hide unavailable optional engines from the live app selector so missing
