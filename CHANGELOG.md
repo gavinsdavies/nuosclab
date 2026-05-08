@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.6.0 - 2026-05-08
+
+- Add a Bokeh plotting extra and include Bokeh in the development test
+  environment.
+- Add frontend-neutral Bokeh renderers for the two-panel and 3x3 probability
+  views.
+- Add Bokeh renderer tests and a standalone HTML preview script for validation
+  before Panel integration.
+
 ## v0.5.1 - 2026-05-07
 
 - Add Python 3.13 and 3.14 to the GitHub Actions CI matrix while retaining
