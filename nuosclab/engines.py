@@ -8,7 +8,8 @@ from typing import Protocol
 
 import numpy as np
 
-from .physics import NSIParams, PMNSParams, oscillation_probabilities
+from .nufast import probability_matter_lbl
+from .physics import _Y_E, NSIParams, PMNSParams, oscillation_probabilities
 
 
 @dataclass(frozen=True)
@@ -92,6 +93,59 @@ class NumpyReferenceEngine:
             nsi,
             antineutrino,
         )
+
+
+@dataclass(frozen=True)
+class NuFastEngine:
+    """Vendored pure-Python port of the NuFast LBL algorithm."""
+
+    n_newton: int = 1
+    metadata: EngineMetadata = field(
+        default_factory=lambda: EngineMetadata(
+            name="nufast",
+            display_name="NuFast",
+            capabilities=EngineCapabilities(nsi=False),
+            precision_note=(
+                "Vendored pure-Python port of NuFast (Denton & Parke, "
+                "arXiv:2405.02400); standard PMNS in constant-density matter, "
+                "with lambda3 refined by one Newton iteration by default."
+            ),
+        )
+    )
+
+    def probabilities(
+        self,
+        energy_gev: np.ndarray,
+        baseline_km: float,
+        rho_gcc: float,
+        pmns: PMNSParams,
+        nsi: NSIParams,
+        antineutrino: bool = False,
+    ) -> np.ndarray:
+        if nsi.eps_emu or nsi.eps_etau or nsi.eps_mutau:
+            raise ValueError(
+                "The nufast engine supports standard PMNS only; "
+                "use numpy_ref or nuprobe for nonzero NSI parameters."
+            )
+
+        energy_gev = np.asarray(energy_gev, dtype=float)
+        # NuFast selects antineutrinos through negative energies
+        signed_energy = -energy_gev if antineutrino else energy_gev
+        probs = probability_matter_lbl(
+            np.sin(pmns.th12) ** 2,
+            np.sin(pmns.th13) ** 2,
+            np.sin(pmns.th23) ** 2,
+            pmns.delta_cp,
+            pmns.dm21,
+            pmns.dm31,
+            baseline_km,
+            signed_energy,
+            rho_gcc * _Y_E,
+            self.n_newton,
+        )
+        # NuFast returns P[n, alpha, beta]; the registry convention is
+        # P[n, beta, alpha]
+        return np.ascontiguousarray(probs.transpose(0, 2, 1))
 
 
 @dataclass(frozen=True)
@@ -213,7 +267,9 @@ class EngineRegistry:
         return tuple(engine.metadata for engine in self._engines.values())
 
 
-ENGINE_REGISTRY = EngineRegistry((NumpyReferenceEngine(), NuprobeEngine()))
+ENGINE_REGISTRY = EngineRegistry(
+    (NumpyReferenceEngine(), NuFastEngine(), NuprobeEngine())
+)
 
 
 def get_engine(name: str = "numpy_ref") -> OscillationEngine:
