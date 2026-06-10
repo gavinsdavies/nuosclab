@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.8.0 - 2026-06-10
+
+- Add a vendored pure-Python port of the NuFast long-baseline algorithm
+  (Denton & Parke, arXiv:2405.02400, MIT) as the always-available `nufast`
+  engine for standard-PMNS cross-validation.
+- Gate the Panel app NSI sliders when the selected engine lacks NSI support
+  and note the gating in the status line.
+- Document the measured `nufast` vs `numpy_ref` agreement floor (~3e-5,
+  set by rounded upstream constants) in the README and tests.
+- Update CI to `actions/checkout@v6` and `actions/setup-python@v6` to clear
+  the Node.js 20 deprecation warnings.
+
 ## v0.7.2 - 2026-05-08
 
 - Add selected-experiment logo-inspired badges to the Panel sidebar.
