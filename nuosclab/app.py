@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from .core import ExplorerConfig, ExplorerCurves, compute_curves
-from .engines import ENGINE_REGISTRY
+from .engines import ENGINE_REGISTRY, get_engine
 from .physics import NSIParams, PMNSParams
 from .presets import PRESETS
 
@@ -82,6 +82,7 @@ def build_panel_app() -> AppState:
         "n_points": n_points,
     }
 
+    _sync_nsi_controls(controls)
     initial = _compute_from_controls(controls)
     sources = _make_sources(initial)
     plots = _make_plots(initial, sources)
@@ -97,6 +98,7 @@ def build_panel_app() -> AppState:
     status = pn.pane.Markdown(_status_text(initial), sizing_mode="stretch_width")
 
     def update(*_events: object) -> ExplorerCurves:
+        _sync_nsi_controls(controls)
         curves = _compute_from_controls(controls)
         _update_sources(curves, sources, controls["compare_experiments"].value)
         _update_plot_ranges(curves, plots, residual, comparison, grid_plots)
@@ -158,6 +160,17 @@ def build_panel_app() -> AppState:
     return AppState(layout=layout, sources=sources, controls=controls, update=update)
 
 
+def _engine_supports_nsi(engine_name: str) -> bool:
+    return get_engine(engine_name).metadata.capabilities.nsi
+
+
+def _sync_nsi_controls(controls: dict[str, object]) -> None:
+    """Disable the NSI sliders when the selected engine has no NSI support."""
+    disabled = not _engine_supports_nsi(controls["engine"].value)
+    for name in ("eps_emu", "eps_etau", "eps_mutau", "phase_emu"):
+        controls[name].disabled = disabled
+
+
 def _available_engine_options() -> list[str]:
     return [
         metadata.name
@@ -206,12 +219,15 @@ def _experiment_logo_html(experiment: str) -> str:
 
 def _compute_from_controls(controls: dict[str, object]) -> ExplorerCurves:
     pmns = PMNSParams(delta_cp=controls["delta_cp"].value)
-    nsi = NSIParams(
-        eps_emu=controls["eps_emu"].value,
-        eps_etau=controls["eps_etau"].value,
-        eps_mutau=controls["eps_mutau"].value,
-        delta_emu=controls["phase_emu"].value,
-    )
+    if _engine_supports_nsi(controls["engine"].value):
+        nsi = NSIParams(
+            eps_emu=controls["eps_emu"].value,
+            eps_etau=controls["eps_etau"].value,
+            eps_mutau=controls["eps_mutau"].value,
+            delta_emu=controls["phase_emu"].value,
+        )
+    else:
+        nsi = NSIParams()
     return compute_curves(
         ExplorerConfig(
             experiment=controls["experiment"].value,
@@ -540,8 +556,11 @@ def _update_plot_ranges(
 
 def _status_text(curves: ExplorerCurves, compare: bool = False) -> str:
     compare_text = " | comparing experiments" if compare else ""
+    nsi_text = (
+        "" if _engine_supports_nsi(curves.config.engine) else " | NSI off (engine)"
+    )
     return (
         f"**{curves.preset.name}** | L = {curves.preset.L_km:g} km | "
         f"rho = {curves.preset.rho_gcc:g} g/cm^3 | "
-        f"engine = `{curves.config.engine}`{compare_text}"
+        f"engine = `{curves.config.engine}`{nsi_text}{compare_text}"
     )

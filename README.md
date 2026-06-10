@@ -92,9 +92,17 @@ payloads.
 
 `nuosclab` separates the explorer API from the underlying oscillation engine.
 The default engine is `numpy_ref`, a vectorized NumPy implementation maintained
-in this repository. Optional adapters are used for independent validation when
-the external software is available locally.
+in this repository. A second built-in engine provides an always-available
+cross-check, and optional adapters add independent validation when the
+external software is available locally.
 
+- [`NuFast`](https://github.com/PeterDenton/NuFast-LBL) (Denton & Parke,
+  [arXiv:2405.02400](https://arxiv.org/abs/2405.02400), MIT) ships as a
+  vendored pure-Python port in `nuosclab/nufast.py`, registered as the
+  `nufast` engine. It covers standard PMNS in constant-density matter only —
+  no NSI — so the app disables the NSI sliders while it is selected. Agreement
+  with `numpy_ref` is bounded at ~3×10⁻⁵ in probability by the rounded
+  physical constants hardcoded upstream, not by the algorithm.
 - [`nuprobe`](https://github.com/shengfong/nuprobe) is used as an optional
   GPL-3.0-licensed second-engine cross-check. Install it separately from its
   GitHub repository, then run the optional adapter tests with `nuprobe`

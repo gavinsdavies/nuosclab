@@ -1,5 +1,6 @@
 """Tests for the live Panel app wiring."""
 
+import numpy as np
 from bokeh.models import ColumnDataSource
 
 from nuosclab.app import EXPERIMENT_COLORS, build_panel_app
@@ -56,3 +57,21 @@ def test_panel_app_can_update_3x3_and_experiment_comparison_sources():
         comparison
     )
     assert len(state.sources["grid_0_1"].data["live"]) == 300
+
+
+def test_panel_app_gates_nsi_controls_for_non_nsi_engine():
+    state = build_panel_app()
+    state.controls["eps_mutau"].value = 0.1
+
+    state.controls["engine"].value = "nufast"
+    curves = state.update()
+
+    assert state.controls["eps_mutau"].disabled
+    assert state.controls["phase_emu"].disabled
+    assert np.allclose(curves.live, curves.standard)
+
+    state.controls["engine"].value = "numpy_ref"
+    curves = state.update()
+
+    assert not state.controls["eps_mutau"].disabled
+    assert not np.allclose(curves.live, curves.standard)

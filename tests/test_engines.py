@@ -22,6 +22,7 @@ def test_default_registry_exposes_numpy_reference_engine():
     assert engine.metadata.capabilities.antineutrino
     assert engine.metadata.capabilities.nsi
     assert "numpy_ref" in ENGINE_REGISTRY.names()
+    assert "nufast" in ENGINE_REGISTRY.names()
     assert "nuprobe" in ENGINE_REGISTRY.names()
 
 
