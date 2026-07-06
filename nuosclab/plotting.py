@@ -14,10 +14,12 @@ if TYPE_CHECKING:
 
 
 def _channel_label(src: int, dst: int, anti: bool) -> str:
-    bar = r"\bar" if anti else ""
-    sf = FLAVOR_TEX[src].replace(r"\nu", rf"\{bar}\nu")
-    df = FLAVOR_TEX[dst].replace(r"\nu", rf"\{bar}\nu")
-    return rf"$P({sf} \to {df})$"
+    sf = FLAVOR_TEX[src]
+    df = FLAVOR_TEX[dst]
+    if anti:
+        sf = sf.replace("\\nu", "\\bar{\\nu}", 1)
+        df = df.replace("\\nu", "\\bar{\\nu}", 1)
+    return f"$P({sf} \\to {df})$"
 
 
 def _plain_channel_label(src: int, dst: int, anti: bool) -> str:

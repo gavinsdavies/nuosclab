@@ -19,4 +19,4 @@ T2K   = ExperimentPreset("T2K",   L_km=295,   rho_gcc=2.6,    E_range=(0.1, 2.0)
 PRESETS: dict[str, ExperimentPreset] = {p.name: p for p in (NOVA, DUNE, T2K)}
 
 FLAVOR_LABELS = ["e", "μ", "τ"]
-FLAVOR_TEX    = [r"$\nu_e$", r"$\nu_\mu$", r"$\nu_\tau$"]
+FLAVOR_TEX    = [r"\nu_e", r"\nu_\mu", r"\nu_\tau"]
