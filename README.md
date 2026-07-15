@@ -8,18 +8,8 @@ Presets: NOvA (L=810 km, ρ=2.79 g/cm³), DUNE (1300 km), T2K (295 km).
 
 ## Setup (one-time)
 
-The package supports either `uv` or standard `venv`/`pip` workflows.
-
-```bash
-python3 -m venv /path/to/external/nuosclab-venv
-source /path/to/external/nuosclab-venv/bin/activate
-pip install -e ".[notebook,dev]"
-python -m ipykernel install --user \
-    --name=nuosclab --display-name "nuosclab"
-```
-
-With `uv`, point the project environment at an external path if you do not want
-an in-repository `.venv`:
+`uv` is the primary, recommended workflow. Point the project environment at an
+external path if you do not want an in-repository `.venv`:
 
 ```bash
 UV_PROJECT_ENVIRONMENT=/path/to/external/nuosclab-venv \
@@ -29,27 +19,59 @@ UV_PROJECT_ENVIRONMENT=/path/to/external/nuosclab-venv \
     --name=nuosclab --display-name "nuosclab"
 ```
 
+<details>
+<summary>Alternative: standard <code>venv</code>/<code>pip</code></summary>
+
+```bash
+python3 -m venv /path/to/external/nuosclab-venv
+source /path/to/external/nuosclab-venv/bin/activate
+pip install -e ".[notebook,dev]"
+python -m ipykernel install --user \
+    --name=nuosclab --display-name "nuosclab"
+```
+
+</details>
+
 ## Open the notebook
+
+```bash
+UV_PROJECT_ENVIRONMENT=/path/to/external/nuosclab-venv \
+    uv run jupyter lab notebooks/explorer.ipynb
+```
+
+Select the **nuosclab** kernel, then run all cells.
+
+<details>
+<summary>Alternative: <code>venv</code>/<code>pip</code></summary>
 
 ```bash
 source /path/to/external/nuosclab-venv/bin/activate
 jupyter lab notebooks/explorer.ipynb
 ```
 
-Select the **nuosclab** kernel, then run all cells.
-
-With `uv`, use the same `UV_PROJECT_ENVIRONMENT=... uv run jupyter lab
-notebooks/explorer.ipynb` pattern from setup.
+</details>
 
 ## Run the Panel app
 
 Install the app extra, then serve the live scientific app:
 
 ```bash
+UV_PROJECT_ENVIRONMENT=/path/to/external/nuosclab-venv \
+    uv sync --extra app --extra plot
+UV_PROJECT_ENVIRONMENT=/path/to/external/nuosclab-venv \
+    uv run panel serve tools/panel_app.py --show
+```
+
+<details>
+<summary>Alternative: <code>venv</code>/<code>pip</code></summary>
+
+```bash
 source /path/to/external/nuosclab-venv/bin/activate
 pip install -e ".[app,plot]"
 panel serve tools/panel_app.py --show
 ```
+
+</details>
 
 The app provides live controls for experiment, engine, antineutrino mode,
 δ_CP, representative NSI magnitudes and phase, energy-grid resolution,
@@ -60,9 +82,19 @@ Bokeh plot toolbar to export that plot as a PNG.
 ## Run tests
 
 ```bash
+UV_PROJECT_ENVIRONMENT=/path/to/external/nuosclab-venv \
+    uv run pytest tests/ -v
+```
+
+<details>
+<summary>Alternative: <code>venv</code>/<code>pip</code></summary>
+
+```bash
 source /path/to/external/nuosclab-venv/bin/activate
 pytest tests/ -v
 ```
+
+</details>
 
 The `test_vs_osclib` test is skipped until `tests/test_vs_osclib.csv` is
 populated — see `tools/osclib_oracle.cc` for instructions.
@@ -70,9 +102,19 @@ populated — see `tools/osclib_oracle.cc` for instructions.
 ## Run lint
 
 ```bash
+UV_PROJECT_ENVIRONMENT=/path/to/external/nuosclab-venv \
+    uv run ruff check .
+```
+
+<details>
+<summary>Alternative: <code>venv</code>/<code>pip</code></summary>
+
+```bash
 source /path/to/external/nuosclab-venv/bin/activate
 ruff check .
 ```
+
+</details>
 
 ## Frontend API
 
