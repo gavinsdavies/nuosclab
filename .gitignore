@@ -13,3 +13,4 @@ build/
 tools/osclib_oracle
 tests/test_vs_osclib.csv
 bokeh-preview.html
+.DS_Store
