@@ -214,13 +214,13 @@ and asserts agreement to <10⁻⁴ when a locally generated oracle file exists.
 - **Web frontend** — a browser UI built on the existing frontend-neutral
   `compute_curves()` API, so the same computation layer serves notebooks,
   the Panel app, and a future web app without duplicating physics code.
+  ([#31](https://github.com/gavinsdavies/nuosclab/issues/31))
 - **Broader OscLib validation coverage** — move from selected validation
   points (`tools/osclib_oracle.cc`) to systematic agreement checks across
   the full PMNS + NSI parameter space, including antineutrino and
   varying-density scenarios.
+  ([#32](https://github.com/gavinsdavies/nuosclab/issues/32))
 - **Additional engine adapters** — evaluate further independent oscillation
   codes as optional cross-check engines, following the same
   `OscillationEngine` protocol used by `numpy_ref`, `nufast`, and `nuprobe`.
-
-See the [issue tracker](https://github.com/gavinsdavies/nuosclab/issues) for
-current status on each item.
+  ([#33](https://github.com/gavinsdavies/nuosclab/issues/33))
