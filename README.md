@@ -177,9 +177,9 @@ The engine (`nuosclab/physics.py`) mirrors OscLib's `PMNS_NSI.cxx`:
 1. **PMNS matrix** `U(θ₁₂, θ₁₃, θ₂₃, δ_CP)` — standard PDG convention.
 2. **Vacuum Hamiltonian** `H_vac = U · diag(0, Δm²₂₁, Δm²₃₁) · U† / (2E)`.
 3. **NSI matter potential** `V = √2 G_F N_e (diag(1,0,0) + ε)` where ε is
-   the 3×3 Hermitian NSI matrix parameterised by |ε_eμ|, |ε_eτ|, |ε_μτ|
+   the 3×3 Hermitian NSI matrix parameterized by |ε_eμ|, |ε_eτ|, |ε_μτ|
    and their phases.
-4. **Propagator** via `numpy.linalg.eigh` — exact diagonalisation, vectorised
+4. **Propagator** via `numpy.linalg.eigh` — exact diagonalization, vectorized
    over the energy array.
 5. **Antineutrinos** — H_vac → conj(H_vac), V → −conj(V), matching OscLib.
 
@@ -209,6 +209,18 @@ pytest tests/test_vs_osclib.py -q
 Keep `tests/test_vs_osclib.csv` local. The test skips when the CSV is absent
 and asserts agreement to <10⁻⁴ when a locally generated oracle file exists.
 
+## License
+
+MIT — see [`LICENSE`](LICENSE). Note that the optional `nuprobe` adapter
+depends on GPL-3.0-licensed software installed separately by the user (see
+[Engine Adapters](#engine-adapters)); `nuprobe` is never required to install
+or run `nuosclab`.
+
+## Citation
+
+See [`CITATION.cff`](CITATION.cff) for citation metadata. A Zenodo DOI will
+be added here once the first archived release is minted.
+
 ## Roadmap
 
 - **Web frontend** — a browser UI built on the existing frontend-neutral
@@ -224,3 +236,10 @@ and asserts agreement to <10⁻⁴ when a locally generated oracle file exists.
   codes as optional cross-check engines, following the same
   `OscillationEngine` protocol used by `numpy_ref`, `nufast`, and `nuprobe`.
   ([#33](https://github.com/gavinsdavies/nuosclab/issues/33))
+
+## Acknowledgements
+
+Portions of this codebase were developed with Claude Code assistance. All
+code and content are human-owned, human-reviewed, and human-validated
+before release; see [Validation](#validation) for the physics cross-checks
+applied.
