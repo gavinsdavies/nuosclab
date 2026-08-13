@@ -87,6 +87,34 @@ experiment comparison, 3x3 channel inspection, and selected-experiment logo
 inspired badges with experiment-matched base colors. Use the save icon in each
 Bokeh plot toolbar to export that plot as a PNG.
 
+## Bokeh preview (no server)
+
+The Panel app's Bokeh renderers (`nuosclab.plotting.make_bokeh_two_panel`,
+`make_bokeh_probability_grid`) can be used standalone, without running
+Panel, via `tools/bokeh_preview.py`. It computes one fixed DUNE + NSI
+example and writes a static `bokeh-preview.html` you can open directly:
+
+```bash
+UV_PROJECT_ENVIRONMENT=/path/to/external/nuosclab-venv \
+    uv sync --extra plot
+UV_PROJECT_ENVIRONMENT=/path/to/external/nuosclab-venv \
+    uv run python tools/bokeh_preview.py
+```
+
+<details>
+<summary>Alternative: <code>venv</code>/<code>pip</code></summary>
+
+```bash
+source /path/to/external/nuosclab-venv/bin/activate
+pip install -e ".[plot]"
+python tools/bokeh_preview.py
+```
+
+</details>
+
+Useful for checking a Bokeh rendering change without the overhead of a
+Panel session, or for embedding the renderers in your own script.
+
 ## Run tests
 
 ```bash
