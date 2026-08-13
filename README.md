@@ -1,6 +1,6 @@
 # nuosclab — Neutrino Oscillation Laboratory
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21919616.svg)](https://doi.org/10.5281/zenodo.21919616)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21919616-blue.svg)](https://doi.org/10.5281/zenodo.21919616)
 
 Interactive PMNS + NSI neutrino oscillation probability viewer.
 
