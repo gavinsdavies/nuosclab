@@ -6,6 +6,14 @@ Drag sliders to see how NSI (Non-Standard Interaction) parameters deform
 P(νμ→νe) and P(νμ→νμ) vs energy, relative to the standard PMNS curve.
 Presets: NOvA (L=810 km, ρ=2.79 g/cm³), DUNE (1300 km), T2K (295 km).
 
+**Validation status:** the default `numpy_ref` engine is cross-checked
+against the vendored `nufast` engine (standard PMNS) and, optionally,
+against `nuprobe` and an external OscLib oracle (see
+[Validation](#validation)). As of v1.0.0 the public API
+(`compute_curves`, `ExplorerConfig`, the engine registry) is considered
+stable; systematic numerical validation across the full parameter space
+against OscLib is ongoing.
+
 ## Setup (one-time)
 
 `uv` is the primary, recommended workflow. Point the project environment at an
@@ -200,3 +208,19 @@ pytest tests/test_vs_osclib.py -q
 
 Keep `tests/test_vs_osclib.csv` local. The test skips when the CSV is absent
 and asserts agreement to <10⁻⁴ when a locally generated oracle file exists.
+
+## Roadmap
+
+- **Web frontend** — a browser UI built on the existing frontend-neutral
+  `compute_curves()` API, so the same computation layer serves notebooks,
+  the Panel app, and a future web app without duplicating physics code.
+- **Broader OscLib validation coverage** — move from selected validation
+  points (`tools/osclib_oracle.cc`) to systematic agreement checks across
+  the full PMNS + NSI parameter space, including antineutrino and
+  varying-density scenarios.
+- **Additional engine adapters** — evaluate further independent oscillation
+  codes as optional cross-check engines, following the same
+  `OscillationEngine` protocol used by `numpy_ref`, `nufast`, and `nuprobe`.
+
+See the [issue tracker](https://github.com/gavinsdavies/nuosclab/issues) for
+current status on each item.
