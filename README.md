@@ -1,4 +1,4 @@
-# nuosclab
+# nuosclab — Neutrino Oscillation Laboratory
 
 Interactive PMNS + NSI neutrino oscillation probability viewer.
 

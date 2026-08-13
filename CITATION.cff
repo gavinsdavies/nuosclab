@@ -3,9 +3,10 @@ message: "If you use this software, please cite it as below."
 type: software
 title: nuosclab
 abstract: >-
-  Interactive PMNS + NSI neutrino oscillation probability viewer, with a
-  frontend-neutral computation API and pluggable oscillation engines
-  (numpy_ref, NuFast, optional nuprobe cross-check).
+  nuosclab (Neutrino Oscillation Laboratory): an interactive PMNS + NSI
+  neutrino oscillation probability viewer, with a frontend-neutral
+  computation API and pluggable oscillation engines (numpy_ref, NuFast,
+  optional nuprobe cross-check).
 authors:
   - family-names: Davies
     given-names: Gavin S.
