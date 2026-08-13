@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.0.0 - 2026-08-13
+
+- Declare the public API stable: `compute_curves`, `ExplorerConfig`, and the
+  engine registry (`get_engine`, `ENGINE_REGISTRY`, `OscillationEngine`).
+  Numerical validation coverage against OscLib continues to expand beyond
+  this release; see the README Validation section and Roadmap.
+- Add `CITATION.cff` and PyPI-style project metadata (description, authors,
+  project URLs) for Zenodo archival and citation.
+- Clear stale embedded outputs from `notebooks/accelerator.ipynb`.
+- Remove the unreferenced `results/` scratch-output directory.
+- Add a README Roadmap section.
+
 ## v0.8.0 - 2026-06-10
 
 - Add a vendored pure-Python port of the NuFast long-baseline algorithm

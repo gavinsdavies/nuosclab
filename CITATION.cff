@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: nuosclab
+abstract: >-
+  Interactive PMNS + NSI neutrino oscillation probability viewer, with a
+  frontend-neutral computation API and pluggable oscillation engines
+  (numpy_ref, NuFast, optional nuprobe cross-check).
+authors:
+  - family-names: Davies
+    given-names: Gavin S.
+version: 1.0.0
+date-released: "2026-08-13"
+license: MIT
+repository-code: "https://github.com/gavinsdavies/nuosclab"
+keywords:
+  - neutrino oscillations
+  - PMNS
+  - non-standard interactions
+  - particle physics
+references:
+  - type: article
+    title: "NuFast: Fast and accurate neutrino oscillation probabilities in matter"
+    authors:
+      - family-names: Denton
+        given-names: Peter B.
+      - family-names: Parke
+        given-names: Stephen J.
+    identifiers:
+      - type: other
+        value: "arXiv:2405.02400"
+    notes: >-
+      nuosclab/nufast.py is a vendored pure-Python port of this algorithm's
+      reference implementation, NuFast_LBL.cpp (MIT License).
