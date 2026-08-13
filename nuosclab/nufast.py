@@ -3,6 +3,8 @@
 Ported from ``NuFast_LBL.cpp`` by Peter B. Denton and Stephen J. Parke,
 NuFast: Fast and accurate neutrino oscillation probabilities in matter
 (arXiv:2405.02400), MIT License, https://github.com/PeterDenton/NuFast-LBL.
+The original copyright and permission notice is reproduced in
+``THIRD_PARTY_LICENSES.md`` at the repository root, per the MIT license.
 
 The port vectorizes the original per-energy loop over a NumPy energy grid
 and keeps the upstream conventions: mixing inputs are sin^2 of the angles,

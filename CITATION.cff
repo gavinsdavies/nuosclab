@@ -18,3 +18,17 @@ keywords:
   - PMNS
   - non-standard interactions
   - particle physics
+references:
+  - type: article
+    title: "NuFast: Fast and accurate neutrino oscillation probabilities in matter"
+    authors:
+      - family-names: Denton
+        given-names: Peter B.
+      - family-names: Parke
+        given-names: Stephen J.
+    identifiers:
+      - type: other
+        value: "arXiv:2405.02400"
+    notes: >-
+      nuosclab/nufast.py is a vendored pure-Python port of this algorithm's
+      reference implementation, NuFast_LBL.cpp (MIT License).

@@ -180,7 +180,9 @@ external software is available locally.
   `nufast` engine. It covers standard PMNS in constant-density matter only —
   no NSI — so the app disables the NSI sliders while it is selected. Agreement
   with `numpy_ref` is bounded at ~3×10⁻⁵ in probability by the rounded
-  physical constants hardcoded upstream, not by the algorithm.
+  physical constants hardcoded upstream, not by the algorithm. Its original
+  license notice is reproduced in
+  [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md).
 - [`nuprobe`](https://github.com/shengfong/nuprobe) is used as an optional
   GPL-3.0-licensed second-engine cross-check. Install it separately from its
   GitHub repository, then run the optional adapter tests with `nuprobe`
@@ -239,10 +241,12 @@ and asserts agreement to <10⁻⁴ when a locally generated oracle file exists.
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE). Note that the optional `nuprobe` adapter
-depends on GPL-3.0-licensed software installed separately by the user (see
-[Engine Adapters](#engine-adapters)); `nuprobe` is never required to install
-or run `nuosclab`.
+MIT — see [`LICENSE`](LICENSE). The vendored `nufast` engine carries its own
+upstream MIT copyright notice, reproduced in
+[`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md). The optional `nuprobe`
+adapter depends on GPL-3.0-licensed software installed separately by the
+user (see [Engine Adapters](#engine-adapters)); `nuprobe` is never required
+to install or run `nuosclab`.
 
 ## Citation
 
