@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "nuosclab"
 version = "1.0.0"
-description = "Interactive PMNS + NSI neutrino oscillation probability viewer, with a frontend-neutral computation API and pluggable oscillation engines."
+description = "nuosclab (Neutrino Oscillation Laboratory): an interactive PMNS + NSI neutrino oscillation probability viewer, with a frontend-neutral computation API and pluggable oscillation engines."
 readme = "README.md"
 license = "MIT"
 authors = [
