@@ -1,5 +1,7 @@
 # nuosclab — Neutrino Oscillation Laboratory
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21919616.svg)](https://doi.org/10.5281/zenodo.21919616)
+
 Interactive PMNS + NSI neutrino oscillation probability viewer.
 
 Drag sliders to see how NSI (Non-Standard Interaction) parameters deform
@@ -250,8 +252,8 @@ to install or run `nuosclab`.
 
 ## Citation
 
-See [`CITATION.cff`](CITATION.cff) for citation metadata. A Zenodo DOI will
-be added here once the first archived release is minted.
+See [`CITATION.cff`](CITATION.cff) for citation metadata. The v1.0.0 release
+is archived on Zenodo: [10.5281/zenodo.21919616](https://doi.org/10.5281/zenodo.21919616).
 
 ## Roadmap
 

@@ -21,6 +21,7 @@ dependencies = [
 Homepage = "https://github.com/gavinsdavies/nuosclab"
 Repository = "https://github.com/gavinsdavies/nuosclab"
 Changelog = "https://github.com/gavinsdavies/nuosclab/blob/main/CHANGELOG.md"
+DOI = "https://doi.org/10.5281/zenodo.21919616"
 
 [project.optional-dependencies]
 plot = [
