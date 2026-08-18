@@ -4,12 +4,24 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nuosclab"
-version = "0.8.0"
+version = "1.0.0"
+description = "nuosclab (Neutrino Oscillation Laboratory): an interactive PMNS + NSI neutrino oscillation probability viewer, with a frontend-neutral computation API and pluggable oscillation engines."
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "Gavin S. Davies" },
+]
 requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.26",
     "scipy>=1.12",
 ]
+
+[project.urls]
+Homepage = "https://github.com/gavinsdavies/nuosclab"
+Repository = "https://github.com/gavinsdavies/nuosclab"
+Changelog = "https://github.com/gavinsdavies/nuosclab/blob/main/CHANGELOG.md"
+DOI = "https://doi.org/10.5281/zenodo.21919616"
 
 [project.optional-dependencies]
 plot = [

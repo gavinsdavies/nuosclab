@@ -1,10 +1,20 @@
-# nuosclab
+# nuosclab — Neutrino Oscillation Laboratory
+
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21919616-blue.svg)](https://doi.org/10.5281/zenodo.21919616)
 
 Interactive PMNS + NSI neutrino oscillation probability viewer.
 
 Drag sliders to see how NSI (Non-Standard Interaction) parameters deform
 P(νμ→νe) and P(νμ→νμ) vs energy, relative to the standard PMNS curve.
 Presets: NOvA (L=810 km, ρ=2.79 g/cm³), DUNE (1300 km), T2K (295 km).
+
+**Validation status:** the default `numpy_ref` engine is cross-checked
+against the vendored `nufast` engine (standard PMNS) and, optionally,
+against `nuprobe` and an external OscLib oracle (see
+[Validation](#validation)). As of v1.0.0 the public API
+(`compute_curves`, `ExplorerConfig`, the engine registry) is considered
+stable; systematic numerical validation across the full parameter space
+against OscLib is ongoing.
 
 ## Setup (one-time)
 
@@ -79,6 +89,34 @@ experiment comparison, 3x3 channel inspection, and selected-experiment logo
 inspired badges with experiment-matched base colors. Use the save icon in each
 Bokeh plot toolbar to export that plot as a PNG.
 
+## Bokeh preview (no server)
+
+The Panel app's Bokeh renderers (`nuosclab.plotting.make_bokeh_two_panel`,
+`make_bokeh_probability_grid`) can be used standalone, without running
+Panel, via `tools/bokeh_preview.py`. It computes one fixed DUNE + NSI
+example and writes a static `bokeh-preview.html` you can open directly:
+
+```bash
+UV_PROJECT_ENVIRONMENT=/path/to/external/nuosclab-venv \
+    uv sync --extra plot
+UV_PROJECT_ENVIRONMENT=/path/to/external/nuosclab-venv \
+    uv run python tools/bokeh_preview.py
+```
+
+<details>
+<summary>Alternative: <code>venv</code>/<code>pip</code></summary>
+
+```bash
+source /path/to/external/nuosclab-venv/bin/activate
+pip install -e ".[plot]"
+python tools/bokeh_preview.py
+```
+
+</details>
+
+Useful for checking a Bokeh rendering change without the overhead of a
+Panel session, or for embedding the renderers in your own script.
+
 ## Run tests
 
 ```bash
@@ -144,7 +182,9 @@ external software is available locally.
   `nufast` engine. It covers standard PMNS in constant-density matter only —
   no NSI — so the app disables the NSI sliders while it is selected. Agreement
   with `numpy_ref` is bounded at ~3×10⁻⁵ in probability by the rounded
-  physical constants hardcoded upstream, not by the algorithm.
+  physical constants hardcoded upstream, not by the algorithm. Its original
+  license notice is reproduced in
+  [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md).
 - [`nuprobe`](https://github.com/shengfong/nuprobe) is used as an optional
   GPL-3.0-licensed second-engine cross-check. Install it separately from its
   GitHub repository, then run the optional adapter tests with `nuprobe`
@@ -169,9 +209,9 @@ The engine (`nuosclab/physics.py`) mirrors OscLib's `PMNS_NSI.cxx`:
 1. **PMNS matrix** `U(θ₁₂, θ₁₃, θ₂₃, δ_CP)` — standard PDG convention.
 2. **Vacuum Hamiltonian** `H_vac = U · diag(0, Δm²₂₁, Δm²₃₁) · U† / (2E)`.
 3. **NSI matter potential** `V = √2 G_F N_e (diag(1,0,0) + ε)` where ε is
-   the 3×3 Hermitian NSI matrix parameterised by |ε_eμ|, |ε_eτ|, |ε_μτ|
+   the 3×3 Hermitian NSI matrix parameterized by |ε_eμ|, |ε_eτ|, |ε_μτ|
    and their phases.
-4. **Propagator** via `numpy.linalg.eigh` — exact diagonalisation, vectorised
+4. **Propagator** via `numpy.linalg.eigh` — exact diagonalization, vectorized
    over the energy array.
 5. **Antineutrinos** — H_vac → conj(H_vac), V → −conj(V), matching OscLib.
 
@@ -200,3 +240,40 @@ pytest tests/test_vs_osclib.py -q
 
 Keep `tests/test_vs_osclib.csv` local. The test skips when the CSV is absent
 and asserts agreement to <10⁻⁴ when a locally generated oracle file exists.
+
+## License
+
+MIT — see [`LICENSE`](LICENSE). The vendored `nufast` engine carries its own
+upstream MIT copyright notice, reproduced in
+[`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md). The optional `nuprobe`
+adapter depends on GPL-3.0-licensed software installed separately by the
+user (see [Engine Adapters](#engine-adapters)); `nuprobe` is never required
+to install or run `nuosclab`.
+
+## Citation
+
+See [`CITATION.cff`](CITATION.cff) for citation metadata. The v1.0.0 release
+is archived on Zenodo: [10.5281/zenodo.21919616](https://doi.org/10.5281/zenodo.21919616).
+
+## Roadmap
+
+- **Web frontend** — a browser UI built on the existing frontend-neutral
+  `compute_curves()` API, so the same computation layer serves notebooks,
+  the Panel app, and a future web app without duplicating physics code.
+  ([#31](https://github.com/gavinsdavies/nuosclab/issues/31))
+- **Broader OscLib validation coverage** — move from selected validation
+  points (`tools/osclib_oracle.cc`) to systematic agreement checks across
+  the full PMNS + NSI parameter space, including antineutrino and
+  varying-density scenarios.
+  ([#32](https://github.com/gavinsdavies/nuosclab/issues/32))
+- **Additional engine adapters** — evaluate further independent oscillation
+  codes as optional cross-check engines, following the same
+  `OscillationEngine` protocol used by `numpy_ref`, `nufast`, and `nuprobe`.
+  ([#33](https://github.com/gavinsdavies/nuosclab/issues/33))
+
+## Acknowledgements
+
+Portions of this codebase were developed with Claude Code assistance. All
+code and content are human-owned, human-reviewed, and human-validated
+before release; see [Validation](#validation) for the physics cross-checks
+applied.
