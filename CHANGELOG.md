@@ -13,7 +13,13 @@
 - Add an "NSI e-tau degeneracy" Panel tab with the profiled island map,
   a fixed-δ_CP curve map, energy, tolerance and NSI-hypothesis δ_CP
   sliders, and a button for the NOvA NSI-paper SO point.
-- Add sin²θ₂₃ and Δm²₃₁ sliders to the Panel sidebar; they drive every tab.
+- Add sin²θ₂₃, |Δm²₃₂| and inverted-ordering controls to the Panel sidebar;
+  they drive every tab.
+- Add energy averaging to the ε_eτ maps (`energy_sigma`, `n_energy`,
+  `average="rate"|"spectrum"`) with a Gaussian stand-in for the flux, and
+  matching tab controls.
+- Evaluate the ε_eτ grids with closed-form eigenvalues and Sylvester's
+  formula instead of `eigh` (about 5× faster, same result to ~1e-12).
 - Factor the propagator out of `oscillation_probabilities` into
   `physics._propagate` so batched Hamiltonians can reuse it.
 

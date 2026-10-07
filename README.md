@@ -94,11 +94,30 @@ Bokeh plot toolbar to export that plot as a PNG.
 The **NSI e-tau degeneracy** tab asks where an NSI hypothesis gives the same
 P(νμ→νe) as a standard three-flavour (SO) point, for neutrinos and
 antineutrinos at once. The SO point comes from the sidebar (experiment,
-δ_CP, sin²θ₂₃, Δm²₃₁); the **NOvA NSI-paper SO point** button sets
+δ_CP, sin²θ₂₃, |Δm²₃₂| and the **Inverted ordering** checkbox, which flips
+the sign of Δm²₃₂ at fixed magnitude); the **NOvA NSI-paper SO point** button sets
 δ_CP = 0.82π, sin²θ₂₃ = 0.57, Δm²₃₂ = 2.41×10⁻³ eV², the values used in
 the NOvA NSI Letter ([arXiv:2403.07266](https://arxiv.org/abs/2403.07266)).
 Both plots put δ_CP + φ_eτ on the x-axis and |ε_eτ| (up to 3) on the
 y-axis, at one energy (tab slider, defaults to the experiment's peak).
+
+**Energy average** swaps the single energy for a Gaussian of width σ
+around it, a stand-in for the beam flux (σ resets to 20% of the peak
+energy when the experiment changes). *Rate* asks only that the
+flux-averaged ν and ν̄ rates match; *Spectrum* asks every energy point to
+match, with no detector smearing, so it is much stricter than a real fit.
+For NOvA with σ = 0.4 GeV the island survives in *Rate* mode and barely
+moves; in *Spectrum* mode it no longer reaches the 10% contour. Neither
+mode moves it to the paper's |ε_eτ| ≈ 1.8, which comes from the full fit.
+The island appears in both mass orderings.
+
+Selecting **T2K** (295 km, 0.6 GeV) shows no separate island: the region
+around the SO solution is wider and reaches large |ε_eτ| only in narrow
+spikes attached to it, because the matter potential, and so ε_eτ, matters
+about three times less at T2K's energy. At NOvA's island point (with
+NOvA's best NSI δ_CP) T2K would see its ν and ν̄ appearance probabilities
+drop by roughly 50–65%, so in this idealised picture T2K disfavours the
+NOvA island.
 
 - **Top, profiled.** At each point the NSI hypothesis's δ_CP is chosen to
   minimise the relative ν + ν̄ mismatch, as NOvA profiles over
@@ -136,11 +155,15 @@ pmap.mismatch, pmap.best_delta_cp_nsi
 ```
 
 `nuosclab.plotting.make_bokeh_etau_degeneracy` and
-`make_bokeh_etau_profile` draw the figures. The `numpy_ref` engine
-diagonalises a whole grid in one batched call: about 0.1 s for the
-fixed-δ_CP map and about 1 s for the profile (100 × 61 grid × 24 δ_CP
-values, refined with a parabola). The fixed map falls back to one engine
-call per point for other NSI engines; the profile needs `numpy_ref`.
+`make_bokeh_etau_profile` draw the figures. With `numpy_ref` the grids
+skip `eigh` altogether: closed-form 3×3 eigenvalues plus Sylvester's
+formula give P(νμ→νe) directly, about 5× faster and equal to the `eigh`
+propagator to ~1e-12. The profile (100 × 61 grid × 24 δ_CP values,
+refined with a parabola) takes about 0.15 s at one energy and under 1 s
+with energy averaging. The fixed map falls back to one engine call per
+point for other NSI engines; the profile needs `numpy_ref`. Pass
+`energy_sigma`, `n_energy` and `average` in `EtauDegeneracyConfig` for
+the averaged versions.
 
 ## Bokeh preview (no server)
 
