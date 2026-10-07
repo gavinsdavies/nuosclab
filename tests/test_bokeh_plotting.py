@@ -36,3 +36,24 @@ def test_make_bokeh_probability_grid_returns_all_channels():
     for source in sources:
         assert list(source.data) == ["energy_gev", "live", "standard"]
         assert len(source.data["energy_gev"]) == 6
+
+
+def test_bokeh_etau_degeneracy_builds_and_updates():
+    import numpy as np
+
+    from nuosclab import EtauDegeneracyConfig, PMNSParams, compute_etau_degeneracy
+    from nuosclab.plotting import (
+        make_bokeh_etau_degeneracy,
+        update_bokeh_etau_degeneracy,
+    )
+
+    config = EtauDegeneracyConfig(pmns=PMNSParams(delta_cp=0.8 * np.pi),
+                                  delta_cp_nsi=-np.pi / 2)
+    plot = make_bokeh_etau_degeneracy(compute_etau_degeneracy(config))
+    joint = plot.select_one({"name": "etau_joint"}).data_source
+    assert len(joint.data["eps"]) > 0
+
+    update_bokeh_etau_degeneracy(
+        plot, compute_etau_degeneracy(EtauDegeneracyConfig(experiment="DUNE"))
+    )
+    assert "DUNE" in plot.title.text

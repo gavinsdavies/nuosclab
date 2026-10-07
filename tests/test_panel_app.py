@@ -75,3 +75,22 @@ def test_panel_app_gates_nsi_controls_for_non_nsi_engine():
 
     assert not state.controls["eps_mutau"].disabled
     assert not np.allclose(curves.live, curves.standard)
+
+
+def test_panel_app_etau_degeneracy_tab_follows_controls():
+    state = build_panel_app()
+    assert {"sin2_th23", "dm31", "etau_energy", "etau_delta_cp_nsi"} < set(
+        state.controls
+    )
+
+    state.controls["experiment"].value = "DUNE"
+    state.update()
+    assert state.controls["etau_energy"].end == 10.0
+    assert state.controls["etau_energy"].value == 2.5
+
+    before = state.update().live.copy()
+    state.controls["sin2_th23"].value = 0.45
+    state.controls["dm31"].value = 2.4
+    state.controls["etau_energy"].value = 3.0
+    after = state.update().live
+    assert not np.allclose(before, after)

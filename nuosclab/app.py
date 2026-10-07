@@ -8,8 +8,10 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from .core import ExplorerConfig, ExplorerCurves, compute_curves
+from .degeneracy import EtauDegeneracyConfig, EtauDegeneracyMap, compute_etau_degeneracy
 from .engines import ENGINE_REGISTRY, get_engine
 from .physics import NSIParams, PMNSParams
+from .plotting import make_bokeh_etau_degeneracy, update_bokeh_etau_degeneracy
 from .presets import PRESETS
 
 if TYPE_CHECKING:
@@ -57,6 +59,20 @@ def build_panel_app() -> AppState:
         step=0.05,
         value=PMNSParams().delta_cp,
     )
+    sin2_th23 = pn.widgets.FloatSlider(
+        name="sin^2 theta23",
+        start=0.35,
+        end=0.65,
+        step=0.005,
+        value=round(float(np.sin(PMNSParams().th23) ** 2), 3),
+    )
+    dm31 = pn.widgets.FloatSlider(
+        name="Delta m^2 31 (1e-3 eV^2)",
+        start=2.2,
+        end=2.8,
+        step=0.005,
+        value=PMNSParams().dm31 * 1e3,
+    )
     eps_emu = pn.widgets.FloatSlider(name="|eps e-mu|", start=0.0, end=0.30, step=0.005)
     eps_etau = pn.widgets.FloatSlider(name="|eps e-tau|", start=0.0, end=0.30, step=0.005)
     eps_mutau = pn.widgets.FloatSlider(name="|eps mu-tau|", start=0.0, end=0.30, step=0.005)
@@ -68,6 +84,20 @@ def build_panel_app() -> AppState:
         value=0.0,
     )
     n_points = pn.widgets.IntSlider(name="Points", start=50, end=800, step=50, value=300)
+    etau_energy = pn.widgets.FloatSlider(
+        name="Energy (GeV)",
+        start=PRESETS["NOvA"].E_range[0],
+        end=PRESETS["NOvA"].E_range[1],
+        step=0.05,
+        value=PRESETS["NOvA"].E_peak,
+    )
+    etau_delta_cp_nsi = pn.widgets.FloatSlider(
+        name="delta CP (NSI hypothesis)",
+        start=-np.pi,
+        end=np.pi,
+        step=0.05,
+        value=0.0,
+    )
 
     controls = {
         "experiment": experiment,
@@ -75,11 +105,15 @@ def build_panel_app() -> AppState:
         "antineutrino": antineutrino,
         "compare_experiments": compare_experiments,
         "delta_cp": delta_cp,
+        "sin2_th23": sin2_th23,
+        "dm31": dm31,
         "eps_emu": eps_emu,
         "eps_etau": eps_etau,
         "eps_mutau": eps_mutau,
         "phase_emu": phase_emu,
         "n_points": n_points,
+        "etau_energy": etau_energy,
+        "etau_delta_cp_nsi": etau_delta_cp_nsi,
     }
 
     _sync_nsi_controls(controls)
@@ -89,6 +123,8 @@ def build_panel_app() -> AppState:
     grid_plots = _make_grid_plots(initial, sources)
     residual = _make_residual_plot(initial, sources["residual"])
     comparison = _make_comparison_plot(initial, sources["comparison"])
+    etau_map = _compute_etau_from_controls(controls)
+    etau_plot = make_bokeh_etau_degeneracy(etau_map)
     logo = pn.pane.HTML(
         _experiment_logo_html(initial.config.experiment),
         height=132,
@@ -99,11 +135,13 @@ def build_panel_app() -> AppState:
 
     def update(*_events: object) -> ExplorerCurves:
         _sync_nsi_controls(controls)
+        _sync_etau_energy(controls)
         curves = _compute_from_controls(controls)
         _update_sources(curves, sources, controls["compare_experiments"].value)
         _update_plot_ranges(curves, plots, residual, comparison, grid_plots)
         logo.object = _experiment_logo_html(curves.config.experiment)
         status.object = _status_text(curves, controls["compare_experiments"].value)
+        update_bokeh_etau_degeneracy(etau_plot, _compute_etau_from_controls(controls))
         return curves
 
     for widget in (
@@ -112,11 +150,15 @@ def build_panel_app() -> AppState:
         antineutrino,
         compare_experiments,
         delta_cp,
+        sin2_th23,
+        dm31,
         eps_emu,
         eps_etau,
         eps_mutau,
         phase_emu,
         n_points,
+        etau_energy,
+        etau_delta_cp_nsi,
     ):
         widget.param.watch(update, "value")
 
@@ -128,13 +170,15 @@ def build_panel_app() -> AppState:
         antineutrino,
         compare_experiments,
         delta_cp,
+        sin2_th23,
+        dm31,
         eps_emu,
         eps_etau,
         eps_mutau,
         phase_emu,
         n_points,
         width=280,
-        height=720,
+        height=840,
         sizing_mode="fixed",
     )
     summary = pn.Column(
@@ -144,12 +188,26 @@ def build_panel_app() -> AppState:
     )
     grid = pn.GridBox(*grid_plots.values(), ncols=3, sizing_mode="stretch_width")
     compare = pn.Column(comparison, sizing_mode="stretch_width")
+    degeneracy = pn.Column(
+        pn.pane.Markdown(
+            "Where does an NSI hypothesis (|eps e-tau|, phi e-tau, its own "
+            "delta CP) give the same P(nu_mu -> nu_e) as the standard "
+            "three-flavour point set in the sidebar (delta CP, sin^2 theta23, "
+            "Delta m^2 31)? Solid: neutrinos. Dashed: antineutrinos. Black "
+            "dots: both at once. Always computed with `numpy_ref`.",
+            sizing_mode="stretch_width",
+        ),
+        pn.Row(etau_energy, etau_delta_cp_nsi, sizing_mode="stretch_width"),
+        etau_plot,
+        sizing_mode="stretch_width",
+    )
     main = pn.Column(
         status,
         pn.Tabs(
             ("Summary", summary),
             ("3x3", grid),
             ("Compare", compare),
+            ("NSI e-tau degeneracy", degeneracy),
             sizing_mode="stretch_width",
         ),
         sizing_mode="stretch_width",
@@ -217,8 +275,36 @@ def _experiment_logo_html(experiment: str) -> str:
     """
 
 
+def _pmns_from_controls(controls: dict[str, object]) -> PMNSParams:
+    return PMNSParams(
+        th23=float(np.arcsin(np.sqrt(controls["sin2_th23"].value))),
+        dm31=controls["dm31"].value * 1e-3,
+        delta_cp=controls["delta_cp"].value,
+    )
+
+
+def _sync_etau_energy(controls: dict[str, object]) -> None:
+    """Move the energy slider onto the selected experiment's range."""
+    preset = PRESETS[controls["experiment"].value]
+    slider = controls["etau_energy"]
+    if (slider.start, slider.end) != preset.E_range:
+        start, end = preset.E_range
+        slider.param.update(start=start, end=end, value=preset.E_peak)
+
+
+def _compute_etau_from_controls(controls: dict[str, object]) -> EtauDegeneracyMap:
+    return compute_etau_degeneracy(
+        EtauDegeneracyConfig(
+            experiment=controls["experiment"].value,
+            energy_gev=controls["etau_energy"].value,
+            pmns=_pmns_from_controls(controls),
+            delta_cp_nsi=controls["etau_delta_cp_nsi"].value,
+        )
+    )
+
+
 def _compute_from_controls(controls: dict[str, object]) -> ExplorerCurves:
-    pmns = PMNSParams(delta_cp=controls["delta_cp"].value)
+    pmns = _pmns_from_controls(controls)
     if _engine_supports_nsi(controls["engine"].value):
         nsi = NSIParams(
             eps_emu=controls["eps_emu"].value,
