@@ -94,3 +94,16 @@ def test_panel_app_etau_degeneracy_tab_follows_controls():
     state.controls["etau_energy"].value = 3.0
     after = state.update().live
     assert not np.allclose(before, after)
+
+
+def test_panel_app_nova_paper_point_button():
+    from nuosclab.app import NOVA_NSI_PAPER_POINT
+
+    state = build_panel_app()
+    state.controls["experiment"].value = "DUNE"
+    state.update()
+    state.controls["nova_point"].clicks += 1
+
+    assert state.controls["experiment"].value == "NOvA"
+    for name, value in NOVA_NSI_PAPER_POINT.items():
+        assert state.controls[name].value == value

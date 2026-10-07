@@ -57,3 +57,22 @@ def test_bokeh_etau_degeneracy_builds_and_updates():
         plot, compute_etau_degeneracy(EtauDegeneracyConfig(experiment="DUNE"))
     )
     assert "DUNE" in plot.title.text
+
+
+def test_bokeh_etau_profile_builds_and_updates():
+    from nuosclab import EtauDegeneracyConfig, compute_etau_profile
+    from nuosclab.plotting import make_bokeh_etau_profile, update_bokeh_etau_profile
+
+    small = dict(n_eps=10, n_phase=9, n_delta_cp=6)
+    plot = make_bokeh_etau_profile(
+        compute_etau_profile(EtauDegeneracyConfig(), **small), tolerance=0.1
+    )
+    image = plot.select_one({"name": "profile_image"})
+    assert image.data_source.data["image"][0].shape == (10, 9)
+
+    update_bokeh_etau_profile(
+        plot,
+        compute_etau_profile(EtauDegeneracyConfig(experiment="DUNE"), **small),
+        tolerance=0.05,
+    )
+    assert "DUNE" in plot.title.text and "5%" in plot.title.text

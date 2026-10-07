@@ -8,10 +8,21 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from .core import ExplorerConfig, ExplorerCurves, compute_curves
-from .degeneracy import EtauDegeneracyConfig, EtauDegeneracyMap, compute_etau_degeneracy
+from .degeneracy import (
+    EtauDegeneracyConfig,
+    EtauDegeneracyMap,
+    EtauProfileMap,
+    compute_etau_degeneracy,
+    compute_etau_profile,
+)
 from .engines import ENGINE_REGISTRY, get_engine
 from .physics import NSIParams, PMNSParams
-from .plotting import make_bokeh_etau_degeneracy, update_bokeh_etau_degeneracy
+from .plotting import (
+    make_bokeh_etau_degeneracy,
+    make_bokeh_etau_profile,
+    update_bokeh_etau_degeneracy,
+    update_bokeh_etau_profile,
+)
 from .presets import PRESETS
 
 if TYPE_CHECKING:
@@ -28,6 +39,14 @@ EXPERIMENT_LOGO_SUBTITLES = {
     "T2K": "Tokai to Kamioka",
 }
 FLAVOR_LABELS = ("e", "mu", "tau")
+# Standard-oscillation point used for the NSI degeneracy discussion in the
+# NOvA NSI Letter (arXiv:2403.07266, Fig. 1): Δm²₃₂ = 2.41e-3 eV²,
+# sin²θ₂₃ = 0.57, δ_CP = 0.82π. Δm²₃₁ = Δm²₃₂ + Δm²₂₁.
+NOVA_NSI_PAPER_POINT = {
+    "delta_cp": 0.82 * np.pi,
+    "sin2_th23": 0.57,
+    "dm31": (2.41e-3 + PMNSParams().dm21) * 1e3,
+}
 
 
 @dataclass(frozen=True)
@@ -115,6 +134,12 @@ def build_panel_app() -> AppState:
         "etau_energy": etau_energy,
         "etau_delta_cp_nsi": etau_delta_cp_nsi,
     }
+    etau_tolerance = pn.widgets.FloatSlider(
+        name="Island tolerance (%)", start=1.0, end=25.0, step=0.5, value=10.0
+    )
+    nova_point = pn.widgets.Button(name="NOvA NSI-paper SO point", button_type="default")
+    controls["etau_tolerance"] = etau_tolerance
+    controls["nova_point"] = nova_point
 
     _sync_nsi_controls(controls)
     initial = _compute_from_controls(controls)
@@ -125,6 +150,20 @@ def build_panel_app() -> AppState:
     comparison = _make_comparison_plot(initial, sources["comparison"])
     etau_map = _compute_etau_from_controls(controls)
     etau_plot = make_bokeh_etau_degeneracy(etau_map)
+    profile_cache: dict[str, object] = {"key": None, "map": None}
+
+    def _profile() -> EtauProfileMap:
+        key = _profile_key(controls)
+        if key != profile_cache["key"]:
+            profile_cache["key"] = key
+            profile_cache["map"] = _compute_profile_from_controls(controls)
+        return profile_cache["map"]
+
+    profile_plot = make_bokeh_etau_profile(
+        _profile(), etau_tolerance.value / 100.0
+    )
+    profile_plot.x_range = etau_plot.x_range
+    profile_plot.y_range = etau_plot.y_range
     logo = pn.pane.HTML(
         _experiment_logo_html(initial.config.experiment),
         height=132,
@@ -144,6 +183,23 @@ def build_panel_app() -> AppState:
         update_bokeh_etau_degeneracy(etau_plot, _compute_etau_from_controls(controls))
         return curves
 
+    def update_profile(*_events: object) -> EtauProfileMap:
+        """Slow path (about 1 s): only on slider release, not on every drag."""
+        pmap = _profile()
+        update_bokeh_etau_profile(profile_plot, pmap, etau_tolerance.value / 100.0)
+        return pmap
+
+    def update_all(*_events: object) -> ExplorerCurves:
+        curves = update()
+        update_profile()
+        return curves
+
+    def use_nova_point(*_events: object) -> None:
+        for name, value in NOVA_NSI_PAPER_POINT.items():
+            controls[name].value = value
+        experiment.value = "NOvA"
+        update_all()
+
     for widget in (
         experiment,
         engine,
@@ -161,6 +217,11 @@ def build_panel_app() -> AppState:
         etau_delta_cp_nsi,
     ):
         widget.param.watch(update, "value")
+    for widget in (delta_cp, sin2_th23, dm31, etau_energy):
+        widget.param.watch(update_profile, "value_throttled")
+    for widget in (experiment, etau_tolerance):
+        widget.param.watch(update_profile, "value")
+    nova_point.on_click(use_nova_point)
 
     sidebar = pn.Column(
         "## nuosclab",
@@ -193,11 +254,20 @@ def build_panel_app() -> AppState:
             "Where does an NSI hypothesis (|eps e-tau|, phi e-tau, its own "
             "delta CP) give the same P(nu_mu -> nu_e) as the standard "
             "three-flavour point set in the sidebar (delta CP, sin^2 theta23, "
-            "Delta m^2 31)? Solid: neutrinos. Dashed: antineutrinos. Black "
-            "dots: both at once. Always computed with `numpy_ref`.",
+            "Delta m^2 31)?\n\n"
+            "**Top:** the NSI delta CP is profiled (minimised over) at each "
+            "point, as in the NOvA NSI Letter, so the colour is the best "
+            "possible nu + nubar match. The black contour encloses points "
+            "within the tolerance; the large-|eps| island near 3pi/2 is the "
+            "NOvA degeneracy. Updates when you release a slider (about 1 s).\n\n"
+            "**Bottom:** the NSI delta CP fixed by the slider. Solid: "
+            "neutrinos. Dashed: antineutrinos. Black dots: both at once. "
+            "Both plots use `numpy_ref`.",
             sizing_mode="stretch_width",
         ),
-        pn.Row(etau_energy, etau_delta_cp_nsi, sizing_mode="stretch_width"),
+        pn.Row(etau_energy, etau_tolerance, nova_point, sizing_mode="stretch_width"),
+        profile_plot,
+        etau_delta_cp_nsi,
         etau_plot,
         sizing_mode="stretch_width",
     )
@@ -215,7 +285,9 @@ def build_panel_app() -> AppState:
     layout = pn.Row(sidebar, main, sizing_mode="stretch_width")
     layout.servable(title="nuosclab")
 
-    return AppState(layout=layout, sources=sources, controls=controls, update=update)
+    return AppState(
+        layout=layout, sources=sources, controls=controls, update=update_all
+    )
 
 
 def _engine_supports_nsi(engine_name: str) -> bool:
@@ -299,6 +371,23 @@ def _compute_etau_from_controls(controls: dict[str, object]) -> EtauDegeneracyMa
             energy_gev=controls["etau_energy"].value,
             pmns=_pmns_from_controls(controls),
             delta_cp_nsi=controls["etau_delta_cp_nsi"].value,
+        )
+    )
+
+
+def _profile_key(controls: dict[str, object]) -> tuple:
+    return tuple(
+        controls[name].value
+        for name in ("experiment", "etau_energy", "delta_cp", "sin2_th23", "dm31")
+    )
+
+
+def _compute_profile_from_controls(controls: dict[str, object]) -> EtauProfileMap:
+    return compute_etau_profile(
+        EtauDegeneracyConfig(
+            experiment=controls["experiment"].value,
+            energy_gev=controls["etau_energy"].value,
+            pmns=_pmns_from_controls(controls),
         )
     )
 

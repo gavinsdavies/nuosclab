@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from .core import ExplorerCurves
-from .degeneracy import EtauDegeneracyMap
+from .degeneracy import EtauDegeneracyMap, EtauProfileMap
 from .presets import FLAVOR_TEX, ExperimentPreset
 
 if TYPE_CHECKING:
@@ -334,4 +334,69 @@ def _etau_title(dmap: EtauDegeneracyMap) -> str:
         f"P_SI(nu) = {dmap.p_si_nu:.4f}, P_SI(nubar) = {dmap.p_si_nubar:.4f}  |  "
         f"delta CP: SM = {dmap.config.pmns.delta_cp / np.pi:+.2f} pi, "
         f"NSI = {dmap.config.delta_cp_nsi / np.pi:+.2f} pi"
+    )
+
+
+def make_bokeh_etau_profile(pmap: EtauProfileMap, tolerance: float = 0.1):
+    """Return a Bokeh heat map of the δ_CP-profiled ν + ν̄ mismatch.
+
+    Colour is log10 of ``pmap.mismatch``; the black contour encloses points
+    where both beam modes match the standard probability to within
+    ``tolerance`` (relative). This is where NOvA-style "islands" show up.
+    """
+    from bokeh.models import ColorBar, LinearColorMapper
+    from bokeh.palettes import Viridis256
+    from bokeh.plotting import figure
+
+    mapper = LinearColorMapper(palette=Viridis256, low=-3.0, high=0.0)
+    plot = figure(
+        title=_profile_title(pmap, tolerance),
+        x_axis_label="delta CP + phi e-tau  (pi)",
+        y_axis_label="|eps e-tau|",
+        height=480,
+        sizing_mode="stretch_width",
+        x_range=(0.0, 2.0),
+        y_range=(0.0, float(pmap.eps[-1])),
+        tools="pan,wheel_zoom,box_zoom,reset,save",
+    )
+    plot.image(
+        image=[_log_mismatch(pmap)], x=0.0, y=0.0, dw=2.0,
+        dh=float(pmap.eps[-1]), color_mapper=mapper, name="profile_image",
+    )
+    tol = plot.contour(pmap.phase_sum / np.pi, pmap.eps, pmap.mismatch.T,
+                       levels=[tolerance], line_color="black", line_width=2.0)
+    tol.name = "profile_tolerance"
+    plot.add_layout(
+        ColorBar(color_mapper=mapper, title="log10 mismatch"), "right"
+    )
+    return plot
+
+
+def update_bokeh_etau_profile(
+    plot, pmap: EtauProfileMap, tolerance: float = 0.1
+) -> None:
+    """Redraw a figure from ``make_bokeh_etau_profile`` in place."""
+    from bokeh.plotting.contour import contour_data
+
+    image = plot.select_one({"name": "profile_image"})
+    image.data_source.data = {"image": [_log_mismatch(pmap)]}
+    image.glyph.dh = float(pmap.eps[-1])
+    plot.select_one({"name": "profile_tolerance"}).set_data(
+        contour_data(pmap.phase_sum / np.pi, pmap.eps, pmap.mismatch.T,
+                     levels=[tolerance])
+    )
+    plot.y_range.end = float(pmap.eps[-1])
+    plot.title.text = _profile_title(pmap, tolerance)
+
+
+def _log_mismatch(pmap: EtauProfileMap) -> np.ndarray:
+    return np.log10(np.clip(pmap.mismatch.T, 1e-3, None))
+
+
+def _profile_title(pmap: EtauProfileMap, tolerance: float) -> str:
+    sm = pmap.config.pmns
+    return (
+        f"Profiled over NSI delta CP  |  {pmap.preset.name}  "
+        f"E = {pmap.energy_gev:.2f} GeV  |  SM delta CP = {sm.delta_cp / np.pi:+.2f} pi"
+        f"  |  contour: nu and nubar within {tolerance:.0%}"
     )
