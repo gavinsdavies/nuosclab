@@ -5,10 +5,14 @@
 - Add `compute_etau_degeneracy` (`nuosclab.degeneracy`): maps where
   P(νμ→νe) with NSI ε_eτ equals the standard three-flavour value, for
   neutrinos and antineutrinos, in the (|ε_eτ|, δ_CP + φ_eτ) plane.
-- Add Bokeh renderers `make_bokeh_etau_degeneracy` and
-  `update_bokeh_etau_degeneracy`.
-- Add an "NSI e-tau degeneracy" Panel tab with energy and NSI-hypothesis
-  δ_CP sliders.
+- Add `compute_etau_profile`, which profiles the ν + ν̄ mismatch over the
+  NSI hypothesis's δ_CP as in the NOvA NSI Letter. It reproduces the
+  large-|ε_eτ| island near δ_CP + φ_eτ = 3π/2.
+- Add Bokeh renderers `make_bokeh_etau_degeneracy`,
+  `make_bokeh_etau_profile` and their `update_*` counterparts.
+- Add an "NSI e-tau degeneracy" Panel tab with the profiled island map,
+  a fixed-δ_CP curve map, energy, tolerance and NSI-hypothesis δ_CP
+  sliders, and a button for the NOvA NSI-paper SO point.
 - Add sin²θ₂₃ and Δm²₃₁ sliders to the Panel sidebar; they drive every tab.
 - Factor the propagator out of `oscillation_probabilities` into
   `physics._propagate` so batched Hamiltonians can reuse it.

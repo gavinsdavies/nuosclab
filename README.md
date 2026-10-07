@@ -91,40 +91,56 @@ Bokeh plot toolbar to export that plot as a PNG.
 
 ### NSI ε_eτ degeneracy tab
 
-The **NSI e-tau degeneracy** tab asks where an NSI hypothesis gives exactly
-the same P(νμ→νe) as a standard three-flavour point. The standard point
-comes from the sidebar (experiment, δ_CP, sin²θ₂₃, Δm²₃₁). The NSI
-hypothesis has its own δ_CP (tab slider) plus |ε_eτ| and φ_eτ. The map
-puts δ_CP + φ_eτ on the x-axis and |ε_eτ| on the y-axis, at one energy (tab
-slider, defaults to the experiment's peak). The solid curve is where
-P_NSI = P_SI for neutrinos, the dashed curve the same for antineutrinos,
-and black dots mark grid cells where both hold at once, so neither beam
-mode separates the two hypotheses at that energy.
+The **NSI e-tau degeneracy** tab asks where an NSI hypothesis gives the same
+P(νμ→νe) as a standard three-flavour (SO) point, for neutrinos and
+antineutrinos at once. The SO point comes from the sidebar (experiment,
+δ_CP, sin²θ₂₃, Δm²₃₁); the **NOvA NSI-paper SO point** button sets
+δ_CP = 0.82π, sin²θ₂₃ = 0.57, Δm²₃₂ = 2.41×10⁻³ eV², the values used in
+the NOvA NSI Letter ([arXiv:2403.07266](https://arxiv.org/abs/2403.07266)).
+Both plots put δ_CP + φ_eτ on the x-axis and |ε_eτ| (up to 3) on the
+y-axis, at one energy (tab slider, defaults to the experiment's peak).
 
-If the two δ_CP values are equal, ΔP is linear in |ε_eτ| and the curves
-are near-horizontal lines that never cross; the interesting structure
-appears once the NSI hypothesis is allowed a different δ_CP.
+- **Top, profiled.** At each point the NSI hypothesis's δ_CP is chosen to
+  minimise the relative ν + ν̄ mismatch, as NOvA profiles over
+  δ_CP − φ_eτ. Colour is log₁₀ of that mismatch and the black contour
+  encloses points within the tolerance slider. At the NOvA point this shows
+  the small-|ε_eτ| band connected to the SO solution plus the isolated
+  island near δ_CP + φ_eτ = 3π/2, |ε_eτ| ≈ 1.6 at 1.9 GeV. The paper's
+  full-spectrum fit puts the island at |ε_eτ| ≈ 1.8. This plot updates
+  when a slider is released (about 1 s).
+- **Bottom, fixed δ_CP.** The NSI δ_CP is set by its own slider. The solid
+  curve is P_NSI = P_SI for neutrinos, the dashed curve for antineutrinos,
+  and black dots mark grid cells where both hold. Set the slider to the
+  island's best-fit NSI δ_CP (about 0.96π at the NOvA point) and the two
+  curves cross on the island.
 
-The same calculation is available without Panel:
+The same calculations are available without Panel:
 
 ```python
 import numpy as np
-from nuosclab import EtauDegeneracyConfig, PMNSParams, compute_etau_degeneracy
+from nuosclab import (
+    EtauDegeneracyConfig, PMNSParams, compute_etau_degeneracy, compute_etau_profile,
+)
 
-dmap = compute_etau_degeneracy(EtauDegeneracyConfig(
-    experiment="NOvA",
-    energy_gev=1.9,
-    pmns=PMNSParams(delta_cp=0.8 * np.pi, th23=np.arcsin(np.sqrt(0.55))),
-    delta_cp_nsi=-np.pi / 2,
-))
-dmap.delta_nu, dmap.delta_nubar   # P_NSI - P_SI on the (phase, |eps|) grid
-dmap.joint_cells()                 # approximate nu/nubar crossings
+so = PMNSParams(delta_cp=0.82 * np.pi, th23=np.arcsin(np.sqrt(0.57)),
+                dm31=2.41e-3 + 7.42e-5)
+config = EtauDegeneracyConfig(experiment="NOvA", energy_gev=1.9, pmns=so,
+                              delta_cp_nsi=0.96 * np.pi)
+
+dmap = compute_etau_degeneracy(config)  # fixed NSI delta CP
+dmap.delta_nu, dmap.delta_nubar         # P_NSI - P_SI on the (phase, |eps|) grid
+dmap.joint_cells()                      # approximate nu/nubar crossings
+
+pmap = compute_etau_profile(config)     # NSI delta CP profiled out
+pmap.mismatch, pmap.best_delta_cp_nsi
 ```
 
-`nuosclab.plotting.make_bokeh_etau_degeneracy(dmap)` draws the figure. The
-`numpy_ref` engine diagonalises the whole grid in one batched call (about
-0.1 s for the default 121 × 100 grid); other NSI engines fall back to one
-call per grid point.
+`nuosclab.plotting.make_bokeh_etau_degeneracy` and
+`make_bokeh_etau_profile` draw the figures. The `numpy_ref` engine
+diagonalises a whole grid in one batched call: about 0.1 s for the
+fixed-δ_CP map and about 1 s for the profile (100 × 61 grid × 24 δ_CP
+values, refined with a parabola). The fixed map falls back to one engine
+call per point for other NSI engines; the profile needs `numpy_ref`.
 
 ## Bokeh preview (no server)
 
