@@ -167,7 +167,11 @@ def oscillation_probabilities(
     """
     E_GeV = np.asarray(E_GeV, dtype=float)
     H = _build_hamiltonian(E_GeV, rho_gcc, pmns, nsi, antineutrino)  # (N,3,3)
+    return _propagate(H, L_km)
 
+
+def _propagate(H: np.ndarray, L_km: float) -> np.ndarray:
+    """Return |exp(-i H L)|² for a stack of Hamiltonians H[n,3,3] in eV."""
     # Diagonalise: eigenvalues (N,3) in eV, eigenvectors (N,3,3)
     eigvals, eigvecs = np.linalg.eigh(H)   # eigh guarantees real eigenvalues
 
