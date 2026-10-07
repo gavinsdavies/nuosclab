@@ -41,12 +41,13 @@ EXPERIMENT_LOGO_SUBTITLES = {
 FLAVOR_LABELS = ("e", "mu", "tau")
 # Standard-oscillation point used for the NSI degeneracy discussion in the
 # NOvA NSI Letter (arXiv:2403.07266, Fig. 1): Δm²₃₂ = 2.41e-3 eV²,
-# sin²θ₂₃ = 0.57, δ_CP = 0.82π. Δm²₃₁ = Δm²₃₂ + Δm²₂₁.
+# sin²θ₂₃ = 0.57, δ_CP = 0.82π. The mass ordering is left as selected.
 NOVA_NSI_PAPER_POINT = {
     "delta_cp": 0.82 * np.pi,
     "sin2_th23": 0.57,
-    "dm31": (2.41e-3 + PMNSParams().dm21) * 1e3,
+    "dm32": 2.41,
 }
+ENERGY_AVERAGE_OPTIONS = ("Off", "Rate", "Spectrum")
 
 
 @dataclass(frozen=True)
@@ -85,13 +86,14 @@ def build_panel_app() -> AppState:
         step=0.005,
         value=round(float(np.sin(PMNSParams().th23) ** 2), 3),
     )
-    dm31 = pn.widgets.FloatSlider(
-        name="Delta m^2 31 (1e-3 eV^2)",
+    dm32 = pn.widgets.FloatSlider(
+        name="|Delta m^2 32| (1e-3 eV^2)",
         start=2.2,
         end=2.8,
         step=0.005,
-        value=PMNSParams().dm31 * 1e3,
+        value=round((PMNSParams().dm31 - PMNSParams().dm21) * 1e3, 3),
     )
+    inverted = pn.widgets.Checkbox(name="Inverted ordering", value=False)
     eps_emu = pn.widgets.FloatSlider(name="|eps e-mu|", start=0.0, end=0.30, step=0.005)
     eps_etau = pn.widgets.FloatSlider(name="|eps e-tau|", start=0.0, end=0.30, step=0.005)
     eps_mutau = pn.widgets.FloatSlider(name="|eps mu-tau|", start=0.0, end=0.30, step=0.005)
@@ -125,7 +127,8 @@ def build_panel_app() -> AppState:
         "compare_experiments": compare_experiments,
         "delta_cp": delta_cp,
         "sin2_th23": sin2_th23,
-        "dm31": dm31,
+        "dm32": dm32,
+        "inverted": inverted,
         "eps_emu": eps_emu,
         "eps_etau": eps_etau,
         "eps_mutau": eps_mutau,
@@ -138,7 +141,19 @@ def build_panel_app() -> AppState:
         name="Island tolerance (%)", start=1.0, end=25.0, step=0.5, value=10.0
     )
     nova_point = pn.widgets.Button(name="NOvA NSI-paper SO point", button_type="default")
+    etau_average = pn.widgets.RadioButtonGroup(
+        name="Energy average", options=list(ENERGY_AVERAGE_OPTIONS), value="Off"
+    )
+    etau_sigma = pn.widgets.FloatSlider(
+        name="Energy spread sigma (GeV)",
+        start=0.02,
+        end=1.5,
+        step=0.01,
+        value=_default_sigma("NOvA"),
+    )
     controls["etau_tolerance"] = etau_tolerance
+    controls["etau_average"] = etau_average
+    controls["etau_sigma"] = etau_sigma
     controls["nova_point"] = nova_point
 
     _sync_nsi_controls(controls)
@@ -207,7 +222,8 @@ def build_panel_app() -> AppState:
         compare_experiments,
         delta_cp,
         sin2_th23,
-        dm31,
+        dm32,
+        inverted,
         eps_emu,
         eps_etau,
         eps_mutau,
@@ -217,10 +233,12 @@ def build_panel_app() -> AppState:
         etau_delta_cp_nsi,
     ):
         widget.param.watch(update, "value")
-    for widget in (delta_cp, sin2_th23, dm31, etau_energy):
+    for widget in (delta_cp, sin2_th23, dm32, etau_energy, etau_sigma):
         widget.param.watch(update_profile, "value_throttled")
-    for widget in (experiment, etau_tolerance):
+    for widget in (experiment, inverted, etau_tolerance, etau_average):
         widget.param.watch(update_profile, "value")
+    for widget in (etau_average, etau_sigma):
+        widget.param.watch(update, "value")
     nova_point.on_click(use_nova_point)
 
     sidebar = pn.Column(
@@ -232,7 +250,8 @@ def build_panel_app() -> AppState:
         compare_experiments,
         delta_cp,
         sin2_th23,
-        dm31,
+        dm32,
+        inverted,
         eps_emu,
         eps_etau,
         eps_mutau,
@@ -259,13 +278,23 @@ def build_panel_app() -> AppState:
             "point, as in the NOvA NSI Letter, so the colour is the best "
             "possible nu + nubar match. The black contour encloses points "
             "within the tolerance; the large-|eps| island near 3pi/2 is the "
-            "NOvA degeneracy. Updates when you release a slider (about 1 s).\n\n"
+            "NOvA degeneracy. Updates when you release a slider.\n\n"
+            "**Energy average:** replaces the single energy by a Gaussian "
+            "of width sigma around it (a stand-in for the beam flux). "
+            "*Rate* matches flux-averaged probabilities; *Spectrum* matches "
+            "every energy point, with no detector smearing, so it is much "
+            "stricter than a real fit.\n\n"
             "**Bottom:** the NSI delta CP fixed by the slider. Solid: "
             "neutrinos. Dashed: antineutrinos. Black dots: both at once. "
             "Both plots use `numpy_ref`.",
             sizing_mode="stretch_width",
         ),
         pn.Row(etau_energy, etau_tolerance, nova_point, sizing_mode="stretch_width"),
+        pn.Row(
+            pn.Column("Energy average", etau_average),
+            etau_sigma,
+            sizing_mode="stretch_width",
+        ),
         profile_plot,
         etau_delta_cp_nsi,
         etau_plot,
@@ -348,10 +377,29 @@ def _experiment_logo_html(experiment: str) -> str:
 
 
 def _pmns_from_controls(controls: dict[str, object]) -> PMNSParams:
+    # |Δm²₃₂| is held fixed across orderings: Δm²₃₁ = ±|Δm²₃₂| + Δm²₂₁
+    dm21 = PMNSParams().dm21
+    dm32 = controls["dm32"].value * 1e-3
     return PMNSParams(
         th23=float(np.arcsin(np.sqrt(controls["sin2_th23"].value))),
-        dm31=controls["dm31"].value * 1e-3,
+        dm31=(-dm32 if controls["inverted"].value else dm32) + dm21,
         delta_cp=controls["delta_cp"].value,
+    )
+
+
+def _default_sigma(experiment: str) -> float:
+    return round(0.2 * PRESETS[experiment].E_peak, 2)
+
+
+def _etau_config(controls: dict[str, object], **extra) -> EtauDegeneracyConfig:
+    mode = controls["etau_average"].value
+    return EtauDegeneracyConfig(
+        experiment=controls["experiment"].value,
+        energy_gev=controls["etau_energy"].value,
+        pmns=_pmns_from_controls(controls),
+        energy_sigma=0.0 if mode == "Off" else controls["etau_sigma"].value,
+        average="spectrum" if mode == "Spectrum" else "rate",
+        **extra,
     )
 
 
@@ -362,34 +410,27 @@ def _sync_etau_energy(controls: dict[str, object]) -> None:
     if (slider.start, slider.end) != preset.E_range:
         start, end = preset.E_range
         slider.param.update(start=start, end=end, value=preset.E_peak)
+        controls["etau_sigma"].value = _default_sigma(preset.name)
 
 
 def _compute_etau_from_controls(controls: dict[str, object]) -> EtauDegeneracyMap:
     return compute_etau_degeneracy(
-        EtauDegeneracyConfig(
-            experiment=controls["experiment"].value,
-            energy_gev=controls["etau_energy"].value,
-            pmns=_pmns_from_controls(controls),
-            delta_cp_nsi=controls["etau_delta_cp_nsi"].value,
-        )
+        _etau_config(controls, delta_cp_nsi=controls["etau_delta_cp_nsi"].value)
     )
 
 
 def _profile_key(controls: dict[str, object]) -> tuple:
     return tuple(
         controls[name].value
-        for name in ("experiment", "etau_energy", "delta_cp", "sin2_th23", "dm31")
+        for name in (
+            "experiment", "etau_energy", "delta_cp", "sin2_th23", "dm32",
+            "inverted", "etau_average", "etau_sigma",
+        )
     )
 
 
 def _compute_profile_from_controls(controls: dict[str, object]) -> EtauProfileMap:
-    return compute_etau_profile(
-        EtauDegeneracyConfig(
-            experiment=controls["experiment"].value,
-            energy_gev=controls["etau_energy"].value,
-            pmns=_pmns_from_controls(controls),
-        )
-    )
+    return compute_etau_profile(_etau_config(controls))
 
 
 def _compute_from_controls(controls: dict[str, object]) -> ExplorerCurves:

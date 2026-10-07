@@ -328,9 +328,19 @@ def _joint_data(dmap: EtauDegeneracyMap) -> dict[str, np.ndarray]:
     return {"eps": cells[:, 0], "phase_sum": cells[:, 1] / np.pi}
 
 
+def _setup_text(pmap) -> str:
+    """Experiment, ordering and energy (or energy band) for plot titles."""
+    cfg = pmap.config
+    ordering = "IO" if cfg.pmns.dm31 < 0 else "NO"
+    energy = f"E = {pmap.energy_gev:.2f} GeV"
+    if cfg.energy_sigma > 0:
+        energy += f" +- {cfg.energy_sigma:.2f} ({cfg.average})"
+    return f"{pmap.preset.name} {ordering}  {energy}"
+
+
 def _etau_title(dmap: EtauDegeneracyMap) -> str:
     return (
-        f"{dmap.preset.name}  E = {dmap.energy_gev:.2f} GeV  |  "
+        f"{_setup_text(dmap)}  |  "
         f"P_SI(nu) = {dmap.p_si_nu:.4f}, P_SI(nubar) = {dmap.p_si_nubar:.4f}  |  "
         f"delta CP: SM = {dmap.config.pmns.delta_cp / np.pi:+.2f} pi, "
         f"NSI = {dmap.config.delta_cp_nsi / np.pi:+.2f} pi"
@@ -396,7 +406,7 @@ def _log_mismatch(pmap: EtauProfileMap) -> np.ndarray:
 def _profile_title(pmap: EtauProfileMap, tolerance: float) -> str:
     sm = pmap.config.pmns
     return (
-        f"Profiled over NSI delta CP  |  {pmap.preset.name}  "
-        f"E = {pmap.energy_gev:.2f} GeV  |  SM delta CP = {sm.delta_cp / np.pi:+.2f} pi"
+        f"Profiled over NSI delta CP  |  {_setup_text(pmap)}  |  "
+        f"SM delta CP = {sm.delta_cp / np.pi:+.2f} pi"
         f"  |  contour: nu and nubar within {tolerance:.0%}"
     )

@@ -1,6 +1,7 @@
 """Tests for the live Panel app wiring."""
 
 import numpy as np
+import pytest
 from bokeh.models import ColumnDataSource
 
 from nuosclab.app import EXPERIMENT_COLORS, build_panel_app
@@ -79,7 +80,7 @@ def test_panel_app_gates_nsi_controls_for_non_nsi_engine():
 
 def test_panel_app_etau_degeneracy_tab_follows_controls():
     state = build_panel_app()
-    assert {"sin2_th23", "dm31", "etau_energy", "etau_delta_cp_nsi"} < set(
+    assert {"sin2_th23", "dm32", "inverted", "etau_energy", "etau_delta_cp_nsi"} < set(
         state.controls
     )
 
@@ -90,7 +91,7 @@ def test_panel_app_etau_degeneracy_tab_follows_controls():
 
     before = state.update().live.copy()
     state.controls["sin2_th23"].value = 0.45
-    state.controls["dm31"].value = 2.4
+    state.controls["dm32"].value = 2.4
     state.controls["etau_energy"].value = 3.0
     after = state.update().live
     assert not np.allclose(before, after)
@@ -107,3 +108,25 @@ def test_panel_app_nova_paper_point_button():
     assert state.controls["experiment"].value == "NOvA"
     for name, value in NOVA_NSI_PAPER_POINT.items():
         assert state.controls[name].value == value
+
+
+def test_panel_app_mass_ordering_and_energy_average():
+    from nuosclab.app import _compute_profile_from_controls, _pmns_from_controls
+
+    state = build_panel_app()
+    state.controls["dm32"].value = 2.4
+    no = _pmns_from_controls(state.controls)
+    state.controls["inverted"].value = True
+    io = _pmns_from_controls(state.controls)
+    # |Δm²₃₂| is the same in both orderings
+    assert no.dm31 - no.dm21 == pytest.approx(-(io.dm31 - io.dm21))
+    assert io.dm31 < 0
+
+    state.controls["etau_average"].value = "Spectrum"
+    pmap = _compute_profile_from_controls(state.controls)
+    assert pmap.config.average == "spectrum"
+    assert pmap.config.energy_sigma == state.controls["etau_sigma"].value
+
+    state.controls["experiment"].value = "T2K"
+    state.update()
+    assert state.controls["etau_sigma"].value == pytest.approx(0.12)
