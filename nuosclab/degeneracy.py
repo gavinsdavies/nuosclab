@@ -4,9 +4,15 @@ For a "true" standard three-flavour point (ε = 0), find where an NSI
 hypothesis with ε_eτ = |ε_eτ| e^{iφ_eτ} gives exactly the same appearance
 probability, separately for neutrinos and antineutrinos. To leading order
 the ε_eτ interference term depends on φ_eτ only through δ_CP + φ_eτ, so the
-map is drawn in the (|ε_eτ|, δ_CP + φ_eτ) plane. Where the neutrino and
+map is drawn in the (δ_CP + φ_eτ, |ε_eτ|) plane. Where the neutrino and
 antineutrino zero contours cross, the NSI hypothesis cannot be told apart
 from the standard one by either beam mode at that energy.
+
+``compute_etau_degeneracy`` fixes the NSI hypothesis's δ_CP.
+``compute_etau_profile`` instead minimises the ν + ν̄ mismatch over it at
+each (δ_CP + φ_eτ, |ε_eτ|), the way NOvA profiles over δ_CP − φ_eτ in its
+NSI analysis (arXiv:2403.07266). That is what exposes the isolated
+large-|ε_eτ| "island" near δ_CP + φ_eτ = 3π/2.
 """
 
 from __future__ import annotations
@@ -22,6 +28,7 @@ from .physics import (
     _build_hamiltonian,
     _nsi_potential,
     _propagate,
+    oscillation_probabilities,
 )
 from .presets import PRESETS, ExperimentPreset
 
@@ -34,17 +41,17 @@ class EtauDegeneracyConfig:
 
     ``pmns`` is the standard (ε = 0) reference point. The NSI hypothesis uses
     the same PMNS values except δ_CP, which is ``delta_cp_nsi``; its φ_eτ is
-    then (δ_CP + φ_eτ) − δ_CP^NSI along the vertical axis. Setting
-    ``delta_cp_nsi = pmns.delta_cp`` gives the trivial case where ΔP is
-    O(|ε|) and its zeros are near-horizontal lines that never cross between
-    ν and ν̄. ``energy_gev`` defaults to the experiment's peak energy.
+    then (δ_CP + φ_eτ) − δ_CP^NSI along the phase axis. With
+    ``delta_cp_nsi = pmns.delta_cp``, ΔP is O(|ε|) at small |ε| and the ν
+    and ν̄ zero curves are near-straight lines that only meet at large |ε|.
+    ``energy_gev`` defaults to the experiment's peak energy.
     """
 
     experiment: str = "NOvA"
     energy_gev: float | None = None
     pmns: PMNSParams = field(default_factory=PMNSParams)
     delta_cp_nsi: float = 0.0
-    eps_max: float = 0.5
+    eps_max: float = 3.0
     n_eps: int = 100
     n_phase: int = 121
     engine: str = "numpy_ref"
@@ -139,6 +146,95 @@ def compute_etau_degeneracy(config: EtauDegeneracyConfig) -> EtauDegeneracyMap:
         p_si_nubar=float(p_si[True]),
         delta_nu=deltas[False],
         delta_nubar=deltas[True],
+    )
+
+
+@dataclass(frozen=True)
+class EtauProfileMap:
+    """ν + ν̄ mismatch after profiling over the NSI hypothesis's δ_CP.
+
+    ``mismatch`` is the smallest relative RMS difference
+    sqrt(½[(ΔP_ν/P_ν)² + (ΔP_ν̄/P_ν̄)²]) over δ_CP^NSI, at fixed
+    δ_CP + φ_eτ and |ε_eτ|; ``best_delta_cp_nsi`` is where it is reached.
+    Both have shape ``(n_phase, n_eps)``. Zero means both beam modes see
+    exactly the standard probability.
+    """
+
+    config: EtauDegeneracyConfig
+    preset: ExperimentPreset
+    energy_gev: float
+    eps: np.ndarray
+    phase_sum: np.ndarray
+    mismatch: np.ndarray
+    best_delta_cp_nsi: np.ndarray
+
+
+def compute_etau_profile(
+    config: EtauDegeneracyConfig,
+    n_eps: int = 100,
+    n_phase: int = 61,
+    n_delta_cp: int = 24,
+) -> EtauProfileMap:
+    """Profile the ν + ν̄ mismatch over δ_CP^NSI on a coarse grid.
+
+    ``config.delta_cp_nsi``, ``n_eps`` and ``n_phase`` are ignored in favour
+    of the arguments here, which default to a grid small enough for live
+    sliders (about 1 s). The δ_CP^NSI scan is refined with a parabola
+    through the best scan point and its two neighbours. Only ``numpy_ref``
+    is supported, since the scan needs batched evaluation.
+    """
+    if config.engine != "numpy_ref":
+        raise ValueError("compute_etau_profile supports the numpy_ref engine only")
+    if config.experiment not in PRESETS:
+        known = ", ".join(PRESETS)
+        raise ValueError(
+            f"Unknown experiment {config.experiment!r}; expected one of: {known}"
+        )
+    if min(n_eps, n_phase) < 2 or n_delta_cp < 3:
+        raise ValueError("need n_eps, n_phase >= 2 and n_delta_cp >= 3")
+
+    preset = PRESETS[config.experiment]
+    energy = preset.E_peak if config.energy_gev is None else config.energy_gev
+    if energy <= 0:
+        raise ValueError("energy_gev must be positive")
+
+    eps = np.linspace(0.0, config.eps_max, n_eps + 1)[1:]
+    phase_sum = np.linspace(0.0, 2.0 * np.pi, n_phase)
+    step = 2.0 * np.pi / n_delta_cp
+    delta_cps = -np.pi + step * np.arange(n_delta_cp)
+
+    chi2 = np.empty((n_delta_cp, n_phase, n_eps))
+    for anti in (False, True):
+        p_si = oscillation_probabilities(
+            np.array([energy]), preset.L_km, preset.rho_gcc, config.pmns,
+            NSIParams(), anti,
+        )[0, _DST, _SRC]
+        for k, dcp in enumerate(delta_cps):
+            pmns = replace(config.pmns, delta_cp=dcp)
+            p = _numpy_grid(energy, preset, pmns, eps, phase_sum - dcp, anti)
+            term = 0.5 * ((p - p_si) / p_si) ** 2
+            chi2[k] = term if not anti else chi2[k] + term
+
+    # Parabolic refinement around the best scan point (δ_CP is periodic)
+    k0 = np.argmin(chi2, axis=0)
+    c0 = np.take_along_axis(chi2, k0[np.newaxis], 0)[0]
+    cm = np.take_along_axis(chi2, ((k0 - 1) % n_delta_cp)[np.newaxis], 0)[0]
+    cp = np.take_along_axis(chi2, ((k0 + 1) % n_delta_cp)[np.newaxis], 0)[0]
+    curv = cm - 2.0 * c0 + cp
+    safe = curv > 0
+    offset = np.where(safe, 0.5 * (cm - cp) / np.where(safe, curv, 1.0), 0.0)
+    cmin = np.where(safe, c0 - 0.25 * (cm - cp) * offset, c0)
+    best = delta_cps[k0] + offset * step
+    best = (best + np.pi) % (2.0 * np.pi) - np.pi
+
+    return EtauProfileMap(
+        config=config,
+        preset=preset,
+        energy_gev=float(energy),
+        eps=eps,
+        phase_sum=phase_sum,
+        mismatch=np.sqrt(np.clip(cmin, 0.0, None)),
+        best_delta_cp_nsi=best,
     )
 
 

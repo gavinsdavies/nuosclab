@@ -62,7 +62,7 @@ def test_grid_shapes_and_defaults():
 
     assert dmap.energy_gev == PRESETS["NOvA"].E_peak
     assert dmap.eps.shape == (10,)
-    assert dmap.eps[0] > 0 and dmap.eps[-1] == pytest.approx(0.5)
+    assert dmap.eps[0] > 0 and dmap.eps[-1] == pytest.approx(3.0)
     assert dmap.phase_sum[0] == 0 and dmap.phase_sum[-1] == pytest.approx(2 * np.pi)
     assert dmap.delta_nu.shape == dmap.delta_nubar.shape == (13, 10)
 
@@ -86,14 +86,21 @@ def test_joint_cells_are_degenerate_for_both_beams():
             assert abs(p_nsi - p_si) < 2e-3
 
 
-def test_same_delta_cp_gives_no_crossing():
-    # With δ_CP^NSI = δ_CP^SM, ΔP is O(|ε|) with near-horizontal zero lines
-    # at different δ_CP + φ_eτ for ν and ν̄, so they never cross.
+def test_same_delta_cp_crosses_only_at_large_eps():
+    # With δ_CP^NSI = δ_CP^SM, ΔP is O(|ε|) at small |ε|, with near-straight
+    # zero lines at different δ_CP + φ_eτ for ν and ν̄: no crossing below
+    # |ε| = 0.5. The O(|ε|²) terms bend them into a crossing near |ε| ~ 1.5.
     pmns = PMNSParams(delta_cp=-np.pi / 2)
-    dmap = compute_etau_degeneracy(
+    small = compute_etau_degeneracy(
+        EtauDegeneracyConfig(pmns=pmns, delta_cp_nsi=-np.pi / 2, eps_max=0.5)
+    )
+    assert len(small.joint_cells()) == 0
+
+    full = compute_etau_degeneracy(
         EtauDegeneracyConfig(pmns=pmns, delta_cp_nsi=-np.pi / 2)
     )
-    assert len(dmap.joint_cells()) == 0
+    assert len(full.joint_cells()) > 0
+    assert full.joint_cells()[:, 0].min() > 1.0
 
 
 def test_rejects_invalid_config():
@@ -103,3 +110,57 @@ def test_rejects_invalid_config():
         compute_etau_degeneracy(EtauDegeneracyConfig(engine="nufast"))
     with pytest.raises(ValueError, match="energy_gev"):
         compute_etau_degeneracy(EtauDegeneracyConfig(energy_gev=0.0))
+
+
+NOVA_SO = PMNSParams(
+    th23=np.arcsin(np.sqrt(0.57)), dm31=2.41e-3 + 7.42e-5, delta_cp=0.82 * np.pi
+)
+
+
+def test_profile_finds_nova_island_near_three_pi_over_two():
+    # NOvA NSI Letter (arXiv:2403.07266): at the SO best fit, an isolated
+    # region at large |eps_etau| near delta_CP + phi_etau = 3pi/2 reproduces
+    # both nu and nubar appearance. At a single energy (1.9 GeV) it sits at
+    # |eps_etau| ~ 1.6-1.7; the paper's full-spectrum fit puts it near 1.8.
+    from nuosclab import compute_etau_profile
+
+    pmap = compute_etau_profile(
+        EtauDegeneracyConfig(pmns=NOVA_SO), n_eps=150, n_phase=121, n_delta_cp=48
+    )
+    large = pmap.eps > 1.0
+    sub = pmap.mismatch[:, large]
+    i, j = np.unravel_index(sub.argmin(), sub.shape)
+
+    assert sub[i, j] < 0.01
+    assert pmap.phase_sum[i] / np.pi == pytest.approx(1.5, abs=0.06)
+    assert 1.4 < pmap.eps[large][j] < 1.9
+
+
+def test_profile_best_delta_cp_reproduces_mismatch():
+    from nuosclab import compute_etau_profile
+
+    pmap = compute_etau_profile(
+        EtauDegeneracyConfig(pmns=NOVA_SO), n_eps=20, n_phase=13, n_delta_cp=36
+    )
+    preset = PRESETS["NOvA"]
+    i, j = 9, 12
+    dcp = pmap.best_delta_cp_nsi[i, j]
+    nsi = NSIParams(eps_etau=pmap.eps[j], delta_etau=pmap.phase_sum[i] - dcp)
+    pmns_nsi = PMNSParams(th23=NOVA_SO.th23, dm31=NOVA_SO.dm31, delta_cp=dcp)
+    terms = []
+    for anti in (False, True):
+        p_si = _p_mue(pmap.energy_gev, preset, NOVA_SO, NSIParams(), anti)
+        p_nsi = _p_mue(pmap.energy_gev, preset, pmns_nsi, nsi, anti)
+        terms.append(((p_nsi - p_si) / p_si) ** 2)
+    direct = np.sqrt(0.5 * sum(terms))
+
+    # Parabolic refinement: the reported minimum is close to, and not far
+    # above, the value at the reported delta CP.
+    assert pmap.mismatch[i, j] == pytest.approx(direct, rel=0.05, abs=1e-3)
+
+
+def test_profile_rejects_other_engines():
+    from nuosclab import compute_etau_profile
+
+    with pytest.raises(ValueError, match="numpy_ref"):
+        compute_etau_profile(EtauDegeneracyConfig(engine="nuprobe"))
