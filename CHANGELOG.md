@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- Add `compute_etau_degeneracy` (`nuosclab.degeneracy`): maps where
+  P(νμ→νe) with NSI ε_eτ equals the standard three-flavour value, for
+  neutrinos and antineutrinos, in the (|ε_eτ|, δ_CP + φ_eτ) plane.
+- Add Bokeh renderers `make_bokeh_etau_degeneracy` and
+  `update_bokeh_etau_degeneracy`.
+- Add an "NSI e-tau degeneracy" Panel tab with energy and NSI-hypothesis
+  δ_CP sliders.
+- Add sin²θ₂₃ and Δm²₃₁ sliders to the Panel sidebar; they drive every tab.
+- Factor the propagator out of `oscillation_probabilities` into
+  `physics._propagate` so batched Hamiltonians can reuse it.
+
 ## v1.0.0 - 2026-08-13
 
 - Declare the public API stable: `compute_curves`, `ExplorerConfig`, and the

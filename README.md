@@ -89,6 +89,43 @@ experiment comparison, 3x3 channel inspection, and selected-experiment logo
 inspired badges with experiment-matched base colors. Use the save icon in each
 Bokeh plot toolbar to export that plot as a PNG.
 
+### NSI ε_eτ degeneracy tab
+
+The **NSI e-tau degeneracy** tab asks where an NSI hypothesis gives exactly
+the same P(νμ→νe) as a standard three-flavour point. The standard point
+comes from the sidebar (experiment, δ_CP, sin²θ₂₃, Δm²₃₁). The NSI
+hypothesis has its own δ_CP (tab slider) plus |ε_eτ| and φ_eτ, and the map
+is drawn in the (|ε_eτ|, δ_CP + φ_eτ) plane at one energy (tab slider,
+defaults to the experiment's peak). The solid curve is where
+P_NSI = P_SI for neutrinos, the dashed curve the same for antineutrinos,
+and black dots mark grid cells where both hold at once, so neither beam
+mode separates the two hypotheses at that energy.
+
+If the two δ_CP values are equal, ΔP is linear in |ε_eτ| and the curves
+are near-horizontal lines that never cross; the interesting structure
+appears once the NSI hypothesis is allowed a different δ_CP.
+
+The same calculation is available without Panel:
+
+```python
+import numpy as np
+from nuosclab import EtauDegeneracyConfig, PMNSParams, compute_etau_degeneracy
+
+dmap = compute_etau_degeneracy(EtauDegeneracyConfig(
+    experiment="NOvA",
+    energy_gev=1.9,
+    pmns=PMNSParams(delta_cp=0.8 * np.pi, th23=np.arcsin(np.sqrt(0.55))),
+    delta_cp_nsi=-np.pi / 2,
+))
+dmap.delta_nu, dmap.delta_nubar   # P_NSI - P_SI on the (phase, |eps|) grid
+dmap.joint_cells()                 # approximate nu/nubar crossings
+```
+
+`nuosclab.plotting.make_bokeh_etau_degeneracy(dmap)` draws the figure. The
+`numpy_ref` engine diagonalises the whole grid in one batched call (about
+0.1 s for the default 121 × 100 grid); other NSI engines fall back to one
+call per grid point.
+
 ## Bokeh preview (no server)
 
 The Panel app's Bokeh renderers (`nuosclab.plotting.make_bokeh_two_panel`,
