@@ -94,9 +94,9 @@ Bokeh plot toolbar to export that plot as a PNG.
 The **NSI e-tau degeneracy** tab asks where an NSI hypothesis gives exactly
 the same P(νμ→νe) as a standard three-flavour point. The standard point
 comes from the sidebar (experiment, δ_CP, sin²θ₂₃, Δm²₃₁). The NSI
-hypothesis has its own δ_CP (tab slider) plus |ε_eτ| and φ_eτ, and the map
-is drawn in the (|ε_eτ|, δ_CP + φ_eτ) plane at one energy (tab slider,
-defaults to the experiment's peak). The solid curve is where
+hypothesis has its own δ_CP (tab slider) plus |ε_eτ| and φ_eτ. The map
+puts δ_CP + φ_eτ on the x-axis and |ε_eτ| on the y-axis, at one energy (tab
+slider, defaults to the experiment's peak). The solid curve is where
 P_NSI = P_SI for neutrinos, the dashed curve the same for antineutrinos,
 and black dots mark grid cells where both hold at once, so neither beam
 mode separates the two hypotheses at that energy.

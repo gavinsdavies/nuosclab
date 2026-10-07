@@ -269,7 +269,7 @@ def make_bokeh_etau_degeneracy(dmap: EtauDegeneracyMap):
     """Return a Bokeh figure of the ε_eτ degeneracy curves.
 
     Draws the zero contours of P_NSI − P_SI for νμ → νe (neutrinos) and
-    ν̄μ → ν̄e (antineutrinos) in the (|ε_eτ|, δ_CP + φ_eτ) plane, plus
+    ν̄μ → ν̄e (antineutrinos) with δ_CP + φ_eτ on x and |ε_eτ| on y, plus
     markers on the grid cells where both curves cross. Refresh an existing
     figure with ``update_bokeh_etau_degeneracy``.
     """
@@ -278,22 +278,22 @@ def make_bokeh_etau_degeneracy(dmap: EtauDegeneracyMap):
 
     plot = figure(
         title=_etau_title(dmap),
-        x_axis_label="|eps e-tau|",
-        y_axis_label="delta CP + phi e-tau  (pi)",
+        x_axis_label="delta CP + phi e-tau  (pi)",
+        y_axis_label="|eps e-tau|",
         height=480,
         sizing_mode="stretch_width",
-        x_range=(0.0, float(dmap.eps[-1])),
-        y_range=(0.0, 2.0),
+        x_range=(0.0, 2.0),
+        y_range=(0.0, float(dmap.eps[-1])),
         tools="pan,wheel_zoom,box_zoom,reset,save",
     )
-    x, y = dmap.eps, dmap.phase_sum / np.pi
-    nu = plot.contour(x, y, dmap.delta_nu, levels=[0.0],
+    x, y = dmap.phase_sum / np.pi, dmap.eps
+    nu = plot.contour(x, y, dmap.delta_nu.T, levels=[0.0],
                       line_color="#e25c2a", line_width=2.4)
-    nubar = plot.contour(x, y, dmap.delta_nubar, levels=[0.0],
+    nubar = plot.contour(x, y, dmap.delta_nubar.T, levels=[0.0],
                          line_color="#3a7abf", line_width=2.4, line_dash="dashed")
     nu.name, nubar.name = "etau_nu", "etau_nubar"
     joint = plot.scatter(
-        "eps", "phase_sum", source=ColumnDataSource(_joint_data(dmap)),
+        "phase_sum", "eps", source=ColumnDataSource(_joint_data(dmap)),
         size=8, marker="circle", fill_color="black", line_color="white",
         name="etau_joint",
     )
@@ -311,15 +311,15 @@ def update_bokeh_etau_degeneracy(plot, dmap: EtauDegeneracyMap) -> None:
     """Redraw a figure from ``make_bokeh_etau_degeneracy`` in place."""
     from bokeh.plotting.contour import contour_data
 
-    x, y = dmap.eps, dmap.phase_sum / np.pi
+    x, y = dmap.phase_sum / np.pi, dmap.eps
     plot.select_one({"name": "etau_nu"}).set_data(
-        contour_data(x, y, dmap.delta_nu, levels=[0.0])
+        contour_data(x, y, dmap.delta_nu.T, levels=[0.0])
     )
     plot.select_one({"name": "etau_nubar"}).set_data(
-        contour_data(x, y, dmap.delta_nubar, levels=[0.0])
+        contour_data(x, y, dmap.delta_nubar.T, levels=[0.0])
     )
     plot.select_one({"name": "etau_joint"}).data_source.data = _joint_data(dmap)
-    plot.x_range.end = float(dmap.eps[-1])
+    plot.y_range.end = float(dmap.eps[-1])
     plot.title.text = _etau_title(dmap)
 
 
