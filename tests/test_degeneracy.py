@@ -164,3 +164,46 @@ def test_profile_rejects_other_engines():
 
     with pytest.raises(ValueError, match="numpy_ref"):
         compute_etau_profile(EtauDegeneracyConfig(engine="nuprobe"))
+
+
+def test_closed_form_p_mue_matches_eigh_propagator():
+    from nuosclab.degeneracy import _p_mue
+    from nuosclab.physics import _propagate
+
+    rng = np.random.default_rng(7)
+    H = (rng.normal(size=(500, 3, 3)) + 1j * rng.normal(size=(500, 3, 3))) * 1e-13
+    H = H + np.conj(H.swapaxes(-1, -2))
+    assert np.allclose(_p_mue(H, 810.0), _propagate(H, 810.0)[:, 0, 1], atol=1e-12)
+
+
+def test_energy_average_rate_keeps_island_spectrum_removes_it():
+    # With a Gaussian "flux" (σ = 0.4 GeV around 1.9 GeV), matching only the
+    # flux-averaged rates keeps the NOvA island; demanding the unsmeared
+    # spectrum match point by point removes it at the 10% level.
+    from nuosclab import compute_etau_profile
+
+    def island_min(average):
+        pmap = compute_etau_profile(EtauDegeneracyConfig(
+            pmns=NOVA_SO, energy_sigma=0.4, n_energy=7, average=average,
+        ), n_delta_cp=36)
+        sel = (pmap.eps > 1.2) & (pmap.eps < 2.0)
+        near = np.abs(pmap.phase_sum / np.pi - 1.5) < 0.15
+        return pmap.mismatch[np.ix_(near, sel)].min()
+
+    assert island_min("rate") < 0.05
+    assert island_min("spectrum") > 0.1
+
+
+def test_averaged_fixed_map_is_weighted_mean_of_single_energies():
+    from nuosclab.degeneracy import _energy_points
+
+    base = dict(pmns=NOVA_SO, delta_cp_nsi=0.9 * np.pi, n_eps=5, n_phase=7)
+    avg_cfg = EtauDegeneracyConfig(energy_sigma=0.3, n_energy=5, **base)
+    avg = compute_etau_degeneracy(avg_cfg)
+    energies, weights = _energy_points(PRESETS["NOvA"].E_peak, avg_cfg)
+    singles = [
+        compute_etau_degeneracy(EtauDegeneracyConfig(energy_gev=e, **base))
+        for e in energies
+    ]
+    expected = sum(w * m.delta_nu for w, m in zip(weights, singles))
+    assert np.allclose(avg.delta_nu, expected, atol=1e-12)

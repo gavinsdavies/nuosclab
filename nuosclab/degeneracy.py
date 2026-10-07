@@ -25,9 +25,10 @@ from .engines import get_engine
 from .physics import (
     NSIParams,
     PMNSParams,
+    _HBAR_C_EV_M,
+    _KM_TO_M,
     _build_hamiltonian,
     _nsi_potential,
-    _propagate,
     oscillation_probabilities,
 )
 from .presets import PRESETS, ExperimentPreset
@@ -45,6 +46,14 @@ class EtauDegeneracyConfig:
     ``delta_cp_nsi = pmns.delta_cp``, ΔP is O(|ε|) at small |ε| and the ν
     and ν̄ zero curves are near-straight lines that only meet at large |ε|.
     ``energy_gev`` defaults to the experiment's peak energy.
+
+    ``energy_sigma > 0`` replaces the single energy by ``n_energy`` points
+    across ±2σ around it, weighted by a Gaussian. That is a stand-in for a
+    beam flux, not a real one. The fixed-δ_CP map then compares
+    flux-weighted rates. The profile compares flux-weighted rates when
+    ``average == "rate"`` and the spectra point by point when
+    ``average == "spectrum"`` (no detector smearing, so a much stricter
+    test than a real fit).
     """
 
     experiment: str = "NOvA"
@@ -55,6 +64,9 @@ class EtauDegeneracyConfig:
     n_eps: int = 100
     n_phase: int = 121
     engine: str = "numpy_ref"
+    energy_sigma: float = 0.0
+    n_energy: int = 9
+    average: str = "rate"
 
 
 @dataclass(frozen=True)
@@ -119,22 +131,24 @@ def compute_etau_degeneracy(config: EtauDegeneracyConfig) -> EtauDegeneracyMap:
     pmns_nsi = replace(config.pmns, delta_cp=config.delta_cp_nsi)
     phi = phase_sum - config.delta_cp_nsi
 
+    energies, weights = _energy_points(energy, config)
+
     deltas = {}
     p_si = {}
     for anti in (False, True):
-        p_si[anti] = engine.probabilities(
-            np.array([energy]),
-            preset.L_km,
-            preset.rho_gcc,
-            config.pmns,
-            NSIParams(),
-            anti,
-        )[0, _DST, _SRC]
+        p_si_k = engine.probabilities(
+            energies, preset.L_km, preset.rho_gcc, config.pmns, NSIParams(), anti
+        )[:, _DST, _SRC]
         if config.engine == "numpy_ref":
-            p_nsi = _numpy_grid(energy, preset, pmns_nsi, eps, phi, anti)
+            p_nsi = _numpy_grid(energies, preset, pmns_nsi, eps, phi, anti)
         else:
-            p_nsi = _engine_grid(engine, energy, preset, pmns_nsi, eps, phi, anti)
-        deltas[anti] = p_nsi - p_si[anti]
+            p_nsi = np.stack([
+                _engine_grid(engine, e, preset, pmns_nsi, eps, phi, anti)
+                for e in energies
+            ])
+        # Flux-weighted means; a single energy has weight 1
+        p_si[anti] = weights @ p_si_k
+        deltas[anti] = np.tensordot(weights, p_nsi, axes=1) - p_si[anti]
 
     return EtauDegeneracyMap(
         config=config,
@@ -154,7 +168,8 @@ class EtauProfileMap:
     """ν + ν̄ mismatch after profiling over the NSI hypothesis's δ_CP.
 
     ``mismatch`` is the smallest relative RMS difference
-    sqrt(½[(ΔP_ν/P_ν)² + (ΔP_ν̄/P_ν̄)²]) over δ_CP^NSI, at fixed
+    sqrt(½[(ΔP_ν/P_ν)² + (ΔP_ν̄/P_ν̄)²]) over δ_CP^NSI (a flux-weighted
+    spectral version of it when averaging over energy), at fixed
     δ_CP + φ_eτ and |ε_eτ|; ``best_delta_cp_nsi`` is where it is reached.
     Both have shape ``(n_phase, n_eps)``. Zero means both beam modes see
     exactly the standard probability.
@@ -179,7 +194,7 @@ def compute_etau_profile(
 
     ``config.delta_cp_nsi``, ``n_eps`` and ``n_phase`` are ignored in favour
     of the arguments here, which default to a grid small enough for live
-    sliders (about 1 s). The δ_CP^NSI scan is refined with a parabola
+    sliders (well under a second). The δ_CP^NSI scan is refined with a parabola
     through the best scan point and its two neighbours. Only ``numpy_ref``
     is supported, since the scan needs batched evaluation.
     """
@@ -203,17 +218,29 @@ def compute_etau_profile(
     step = 2.0 * np.pi / n_delta_cp
     delta_cps = -np.pi + step * np.arange(n_delta_cp)
 
-    chi2 = np.empty((n_delta_cp, n_phase, n_eps))
+    energies, weights = _energy_points(energy, config)
+
+    if config.average not in ("rate", "spectrum"):
+        raise ValueError("average must be 'rate' or 'spectrum'")
+
+    # Per beam, "rate": (ΔR/R)² with R = Σ_k w_k P_k. "spectrum":
+    # Σ_k w_k ΔP_k² / P_k  /  Σ_k w_k P_k, a Poisson-like χ² over energy
+    # points. Both reduce to (ΔP/P)² at a single energy.
+    chi2 = np.zeros((n_delta_cp, n_phase, n_eps))
     for anti in (False, True):
         p_si = oscillation_probabilities(
-            np.array([energy]), preset.L_km, preset.rho_gcc, config.pmns,
-            NSIParams(), anti,
-        )[0, _DST, _SRC]
+            energies, preset.L_km, preset.rho_gcc, config.pmns, NSIParams(), anti
+        )[:, _DST, _SRC]
+        rate_si = weights @ p_si
         for k, dcp in enumerate(delta_cps):
             pmns = replace(config.pmns, delta_cp=dcp)
-            p = _numpy_grid(energy, preset, pmns, eps, phase_sum - dcp, anti)
-            term = 0.5 * ((p - p_si) / p_si) ** 2
-            chi2[k] = term if not anti else chi2[k] + term
+            p = _numpy_grid(energies, preset, pmns, eps, phase_sum - dcp, anti)
+            if config.average == "rate":
+                term = ((np.tensordot(weights, p, axes=1) - rate_si) / rate_si) ** 2
+            else:
+                dp2 = (p - p_si[:, np.newaxis, np.newaxis]) ** 2
+                term = np.tensordot(weights / p_si, dp2, axes=1) / rate_si
+            chi2[k] += 0.5 * term
 
     # Parabolic refinement around the best scan point (δ_CP is periodic)
     k0 = np.argmin(chi2, axis=0)
@@ -238,29 +265,84 @@ def compute_etau_profile(
     )
 
 
+def _energy_points(
+    energy: float, config: EtauDegeneracyConfig
+) -> tuple[np.ndarray, np.ndarray]:
+    """Energies and normalised weights: one point, or a Gaussian over ±2σ."""
+    if config.energy_sigma <= 0:
+        return np.array([energy]), np.array([1.0])
+    if config.n_energy < 2:
+        raise ValueError("n_energy must be at least 2 when averaging")
+    offsets = config.energy_sigma * np.linspace(-2.0, 2.0, config.n_energy)
+    energies = energy + offsets
+    energies = energies[energies > 0.05]
+    weights = np.exp(-0.5 * ((energies - energy) / config.energy_sigma) ** 2)
+    return energies, weights / weights.sum()
+
+
 def _numpy_grid(
-    energy: float,
+    energies: float | np.ndarray,
     preset: ExperimentPreset,
     pmns: PMNSParams,
     eps: np.ndarray,
     phi: np.ndarray,
     antineutrino: bool,
 ) -> np.ndarray:
-    """Batched numpy_ref evaluation: one eigh call for the whole grid."""
-    H0 = _build_hamiltonian(
-        np.array([energy]), preset.rho_gcc, pmns, NSIParams(), antineutrino
-    )[0]
+    """Batched numpy_ref P(νμ → νe) over energies × phases × |ε|.
+
+    Returns shape ``(n_phase, n_eps)`` for a scalar energy, otherwise
+    ``(n_energy, n_phase, n_eps)``.
+    """
+    scalar = np.ndim(energies) == 0
+    energies = np.atleast_1d(np.asarray(energies, dtype=float))
+    H0 = _build_hamiltonian(energies, preset.rho_gcc, pmns, NSIParams(), antineutrino)
     # Signed V_CC: +V0 for neutrinos, −V0 for antineutrinos
     v_cc = _nsi_potential(preset.rho_gcc, NSIParams(), antineutrino)[0, 0].real
     e_etau = eps[np.newaxis, :] * np.exp(1j * phi[:, np.newaxis])  # (P, E)
     if antineutrino:
         e_etau = np.conj(e_etau)
 
-    H = np.broadcast_to(H0, e_etau.shape + (3, 3)).copy()
+    shape = (energies.size,) + e_etau.shape
+    H = np.broadcast_to(H0[:, np.newaxis, np.newaxis], shape + (3, 3)).copy()
     H[..., 0, 2] += v_cc * e_etau
     H[..., 2, 0] += v_cc * np.conj(e_etau)
-    P = _propagate(H.reshape(-1, 3, 3), preset.L_km)
-    return P[:, _DST, _SRC].reshape(e_etau.shape)
+    P = _p_mue(H, preset.L_km)
+    return P[0] if scalar else P
+
+
+def _p_mue(H: np.ndarray, L_km: float) -> np.ndarray:
+    """|exp(−iHL)[e, μ]|² for a stack of Hermitian 3×3 H (eV), without eigh.
+
+    Closed-form (trigonometric) eigenvalues plus Sylvester's formula
+    exp(−iK) = Σ_i e^{−iλ_i} (K − λ_j)(K − λ_k) / ((λ_i − λ_j)(λ_i − λ_k)),
+    applied to the traceless, dimensionless K = (H − tr H/3)·L/ħc, forming
+    only the [e, μ] element. Much faster than ``np.linalg.eigh`` on many
+    small matrices; agrees with ``physics._propagate`` to ~1e-12.
+    """
+    K = H * (L_km * _KM_TO_M / _HBAR_C_EV_M)
+    tr = (K[..., 0, 0] + K[..., 1, 1] + K[..., 2, 2]).real / 3.0
+    a = K[..., 0, 0].real - tr
+    b = K[..., 1, 1].real - tr
+    c = K[..., 2, 2].real - tr
+    x01, x02, x12 = K[..., 0, 1], K[..., 0, 2], K[..., 1, 2]
+    n01, n02, n12 = abs(x01) ** 2, abs(x02) ** 2, abs(x12) ** 2
+
+    p = np.sqrt((a * a + b * b + c * c + 2.0 * (n01 + n02 + n12)) / 6.0)
+    det = (
+        a * b * c + 2.0 * (x01 * x12 * np.conj(x02)).real
+        - a * n12 - b * n02 - c * n01
+    )
+    t = np.arccos(np.clip(det / (2.0 * p**3), -1.0, 1.0)) / 3.0
+    lam = [2.0 * p * np.cos(t + 2.0 * np.pi * n / 3.0) for n in range(3)]
+
+    # [e, μ] element of K and of K² (the diagonal shift cancels off-diagonal)
+    k2_01 = (a + b) * x01 + x02 * np.conj(x12)
+    amp = 0.0
+    for i, j, k in ((0, 1, 2), (1, 2, 0), (2, 0, 1)):
+        num = k2_01 - (lam[j] + lam[k]) * x01
+        den = (lam[i] - lam[j]) * (lam[i] - lam[k])
+        amp = amp + np.exp(-1j * lam[i]) * num / den
+    return np.abs(amp) ** 2
 
 
 def _engine_grid(
