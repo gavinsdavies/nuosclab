@@ -4,6 +4,9 @@
 
 Interactive PMNS + NSI neutrino oscillation probability viewer.
 
+**Try it in your browser:** <https://gavinsdavies.github.io/nuosclab/>
+(no install; the first load takes about 30 s while Python starts up).
+
 Drag sliders to see how NSI (Non-Standard Interaction) parameters deform
 P(νμ→νe) and P(νμ→νμ) vs energy, relative to the standard PMNS curve.
 Presets: NOvA (L=810 km, ρ=2.79 g/cm³), DUNE (1300 km), T2K (295 km).
@@ -88,6 +91,27 @@ The app provides live controls for experiment, engine, antineutrino mode,
 experiment comparison, 3x3 channel inspection, and selected-experiment logo
 inspired badges with experiment-matched base colors. Use the save icon in each
 Bokeh plot toolbar to export that plot as a PNG.
+
+## Web app (GitHub Pages)
+
+The same Panel app runs fully in the browser at
+<https://gavinsdavies.github.io/nuosclab/>. It is built with
+`panel convert --to pyodide-worker`, so the physics runs in
+[Pyodide](https://pyodide.org) (Python compiled to WebAssembly) inside a web
+worker and there is no server. The `Pages` workflow rebuilds and deploys it on
+every push to `main`.
+
+To build and check it locally:
+
+```bash
+pip install build "panel==1.8.10" "bokeh==3.9.0" ".[plot]"
+tools/build_pages.sh _site
+python -m http.server -d _site
+```
+
+Then open <http://localhost:8000>. Keep the `panel` and `bokeh` pins in step
+with `.github/workflows/pages.yml`: the page loads matching wheels from the
+HoloViz CDN.
 
 ## Bokeh preview (no server)
 

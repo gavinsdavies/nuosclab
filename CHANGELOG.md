@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Publish the Panel app as a static, in-browser (Pyodide) web app on GitHub
+  Pages, built and deployed by a new `Pages` workflow
+  (`tools/build_pages.sh`).
+
 ## v1.0.0 - 2026-08-13
 
 - Declare the public API stable: `compute_curves`, `ExplorerConfig`, and the
